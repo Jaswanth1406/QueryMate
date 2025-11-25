@@ -3,6 +3,7 @@ import { db } from "@/lib/lib";
 import { messages, conversations } from "@/lib/schema";
 import { streamText } from "ai";
 import { gemini } from "@/lib/ai-gemini";
+// import { bedrock } from "@/lib/ai-bedrock"; // Uncomment when using Bedrock
 import { eq, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getAuthSession, unauthorizedResponse } from "@/lib/auth-middleware";
@@ -74,6 +75,7 @@ export async function POST(req: Request) {
     // Call AI
     const response = await streamText({
       model: gemini(process.env.GEMINI_MODEL!),
+      // model: bedrock(process.env.BEDROCK_MODEL_ID!), // Switch to Bedrock when ready
       messages: formatted,
     });
 
