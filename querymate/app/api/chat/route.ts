@@ -67,6 +67,38 @@ export async function POST(req: Request) {
       .where(eq(messages.conversationId, conversationId))
       .orderBy(messages.createdAt);
 
+    // Generate title for first message
+    const messageCount = history.length;
+    const isFirstMessage = messageCount === 1;
+
+    if (isFirstMessage) {
+      // Generate title using LLM
+      const titleGen = await streamText({
+        model: gemini(process.env.GEMINI_MODEL!),
+        messages: [
+          { 
+            role: "system", 
+            content: "Summarize the user's message into a short 3-5 word title. Output ONLY the title, no quotes or punctuation." 
+          },
+          { role: "user", content: message }
+        ]
+      });
+
+      let generatedTitle = "";
+      for await (const chunk of titleGen.textStream) {
+        generatedTitle += chunk;
+      }
+
+      // Clean up the title
+      generatedTitle = generatedTitle.replace(/['"]/g, "").trim();
+
+      // Update conversation with generated title
+      await db
+        .update(conversations)
+        .set({ title: generatedTitle })
+        .where(eq(conversations.id, conversationId));
+    }
+
     const formatted = history.map((m) => ({
       role: m.role as "user" | "assistant",
       content: m.content || "",
