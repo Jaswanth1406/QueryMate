@@ -172,6 +172,22 @@ Authorization: Bearer YOUR_TOKEN_HERE
 }
 ```
 
+#### Sign Out
+
+```http
+POST /api/auth/sign-out
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: application/json
+```
+
+**Response:**
+
+```json
+{
+  "success": true
+}
+```
+
 ### Conversation Endpoints
 
 #### Create New Conversation
@@ -319,6 +335,22 @@ async function getCurrentUser(token) {
   });
   return await response.json();
 }
+
+// Sign out user
+async function signOut(token) {
+  const response = await fetch('/api/auth/sign-out', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  
+  // Clear token from storage
+  localStorage.removeItem('token');
+  
+  return await response.json();
+}
 ```
 
 ### Load User's Conversations (Sidebar)
@@ -439,12 +471,22 @@ function ChatApp() {
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
-
-  // Load conversations on mount
+  const [user, setUser] = useState(null);
+  // Load conversations and user on mount
   useEffect(() => {
     if (token) {
       loadConversations();
+      loadUser();
     }
+  }, [token]);
+
+  async function loadUser() {
+    const response = await fetch('/api/auth/sessions', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await response.json();
+    setUser(data.user);
+  }
   }, [token]);
 
   async function loadConversations() {
@@ -510,19 +552,46 @@ function ChatApp() {
           newMessages.push({ role: 'assistant', content: aiResponse });
         }
     
-        return newMessages;
-      });
-    }
-
-    setInputMessage('');
-  
-    // Reload conversations if new chat was created
-    if (!currentConversationId) {
-      loadConversations();
     }
   }
 
+  async function handleSignOut() {
+    await fetch('/api/auth/sign-out', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    // Clear state and redirect to login
+    localStorage.removeItem('token');
+    setToken(null);
+    setConversations([]);
+    setMessages([]);
+    setCurrentConversationId(null);
+    setUser(null);
+  }
+
   return (
+    <div className="chat-app">
+      {/* Sidebar with conversations */}
+      <aside>
+        <div className="user-info">
+          {user && (
+            <>
+              <span>{user.name || user.email}</span>
+              <button onClick={handleSignOut}>Sign Out</button>
+            </>
+          )}
+        </div>
+        
+        {conversations.map(conv => (
+          <div key={conv.id} onClick={() => loadMessages(conv.id)}>
+            {conv.title}
+          </div>
+        ))}
+      </aside>
     <div className="chat-app">
       {/* Sidebar with conversations */}
       <aside>
@@ -585,11 +654,12 @@ user
 ├── email (text, unique)
 ├── emailVerified (boolean)
 └── timestamps
-
-session
-├── id (text, primary key)
-├── userId (text, foreign key → user.id)
-├── token (text, unique)
+1. **Sign Up**: POST to `/api/auth/sign-up/email` → Save token
+2. **Get Session**: GET `/api/auth/sessions` with Bearer token
+3. **Create Conversation**: POST to `/api/conversations` with Bearer token
+4. **Send Message**: POST to `/api/chat` with Bearer token and message
+5. **Load Messages**: GET `/api/messages?conversationId=...` with Bearer token
+6. **Sign Out**: POST to `/api/auth/sign-out` with Bearer token
 ├── expiresAt (timestamp)
 └── metadata (ipAddress, userAgent)
 
