@@ -92,26 +92,59 @@ export default function ChatSidebar({
     return !search || chatTitle.toLowerCase().includes(search.toLowerCase());
   });
 
-  const handleEdit = (id: string) => {
+  const handleEdit = async (id: string) => {
     const currentChat = chats.find((c) => c.id === id);
     const currentTitle = currentChat ? getChatTitle(currentChat) : "";
     const newTitle = prompt("Edit chat title", currentTitle);
     if (newTitle && newTitle.trim()) {
-      setChats((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, title: newTitle.trim() } : c)),
-      );
+      try {
+        const response = await fetch("/api/conversations", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ id, title: newTitle.trim() }),
+        });
+        
+        if (response.ok) {
+          setChats((prev) =>
+            prev.map((c) => (c.id === id ? { ...c, title: newTitle.trim() } : c)),
+          );
+        } else {
+          alert("Failed to update conversation title");
+        }
+      } catch (error) {
+        console.error("Error updating title:", error);
+        alert("Failed to update conversation title");
+      }
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!id || !confirm("Delete this conversation and all its messages?")) return;
-    setChats((prev) => prev.filter((c) => c.id !== id));
-    setMessagesByConv((prev) => {
-      const copy = { ...prev };
-      delete copy[id];
-      return copy;
-    });
-    if (activeId === id) setActiveId(null);
+    
+    try {
+      const response = await fetch("/api/conversations", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id }),
+      });
+      
+      if (response.ok) {
+        setChats((prev) => prev.filter((c) => c.id !== id));
+        setMessagesByConv((prev) => {
+          const copy = { ...prev };
+          delete copy[id];
+          return copy;
+        });
+        if (activeId === id) setActiveId(null);
+      } else {
+        alert("Failed to delete conversation");
+      }
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      alert("Failed to delete conversation");
+    }
   };
 
   const initial = (user?.name?.[0] || "U").toUpperCase();
