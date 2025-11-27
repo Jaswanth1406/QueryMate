@@ -238,6 +238,55 @@ Authorization: Bearer YOUR_TOKEN_HERE
 }
 ```
 
+#### Update Conversation Title
+
+```http
+PUT /api/conversations
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "id": "conv_789",
+  "title": "Updated Title"
+}
+```
+
+**Response:**
+
+```json
+{
+  "conversation": {
+    "id": "conv_789",
+    "userId": "user_123",
+    "title": "Updated Title",
+    "createdAt": "2025-11-25T10:00:00.000Z",
+    "updatedAt": "2025-11-25T10:30:00.000Z"
+  }
+}
+```
+
+#### Delete Conversation
+
+```http
+DELETE /api/conversations
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "id": "conv_789"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Conversation & messages deleted"
+}
+```
+
+> **Note**: Deleting a conversation will also delete all associated messages. This action cannot be undone.
+
 ### Message Endpoints
 
 #### Get Messages for a Conversation
@@ -364,6 +413,48 @@ async function getConversations(token) {
   
   // data.conversations = [{ id, title, createdAt }, ...]
   return data.conversations;
+}
+```
+
+### Update Conversation Title
+
+```javascript
+async function updateConversationTitle(token, conversationId, newTitle) {
+  const response = await fetch('/api/conversations', {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      id: conversationId,
+      title: newTitle
+    })
+  });
+  const data = await response.json();
+  
+  return data.conversation;
+}
+```
+
+### Delete Conversation
+
+```javascript
+async function deleteConversation(token, conversationId) {
+  const response = await fetch('/api/conversations', {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      id: conversationId
+    })
+  });
+  const data = await response.json();
+  
+  // data.message = "Conversation & messages deleted"
+  return data;
 }
 ```
 
@@ -509,6 +600,46 @@ function ChatApp() {
     setCurrentConversationId(conversationId);
   }
 
+  async function deleteConversation(conversationId) {
+    const response = await fetch('/api/conversations', {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ id: conversationId })
+    });
+    
+    if (response.ok) {
+      // Remove from UI
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      
+      // Clear messages if deleting current conversation
+      if (currentConversationId === conversationId) {
+        setMessages([]);
+        setCurrentConversationId(null);
+      }
+    }
+  }
+
+  async function updateTitle(conversationId, newTitle) {
+    const response = await fetch('/api/conversations', {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ id: conversationId, title: newTitle })
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      setConversations(prev => 
+        prev.map(c => c.id === conversationId ? data.conversation : c)
+      );
+    }
+  }
+
   async function sendMessage() {
     if (!inputMessage.trim()) return;
 
@@ -587,8 +718,29 @@ function ChatApp() {
         </div>
         
         {conversations.map(conv => (
-          <div key={conv.id} onClick={() => loadMessages(conv.id)}>
-            {conv.title}
+          <div key={conv.id} className="conversation-item">
+            <span onClick={() => loadMessages(conv.id)}>
+              {conv.title}
+            </span>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                const newTitle = prompt('Enter new title:', conv.title);
+                if (newTitle) updateTitle(conv.id, newTitle);
+              }}
+            >
+              ✏️
+            </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm('Delete this conversation?')) {
+                  deleteConversation(conv.id);
+                }
+              }}
+            >
+              🗑️
+            </button>
           </div>
         ))}
       </aside>
