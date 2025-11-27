@@ -5,12 +5,14 @@ A modern, powerful AI chat application that lets you interact with multiple AI p
 ## ✨ Key Features
 
 ### 🎯 Multi-AI Provider Support
+
 - **Google Gemini**: Fast and intelligent responses
 - **Perplexity AI**: Real-time web search and citations
 - **Amazon Bedrock**: Enterprise-grade Claude models
 - Switch between AI models seamlessly within conversations
 
 ### 💬 Advanced Chat Features
+
 - Real-time streaming responses with elegant typing indicators
 - Markdown support for rich text formatting (code blocks, lists, headings)
 - Conversation history with persistent storage
@@ -18,12 +20,14 @@ A modern, powerful AI chat application that lets you interact with multiple AI p
 - Message history with timestamps
 
 ### 🔐 Secure Authentication
+
 - Email/Password authentication
 - OAuth support (Google & GitHub)
 - JWT token-based session management
 - Protected API routes with Bearer authentication
 
 ### 🎨 Modern UI/UX
+
 - Beautiful gradient designs with smooth animations
 - Responsive layout for desktop and mobile
 - Sidebar for conversation management
@@ -31,6 +35,7 @@ A modern, powerful AI chat application that lets you interact with multiple AI p
 - Loading states and error handling
 
 ### 📱 Conversation Management
+
 - Create unlimited conversations
 - Update conversation titles
 - Delete conversations with cascade message deletion
@@ -44,7 +49,7 @@ A modern, powerful AI chat application that lets you interact with multiple AI p
 - **Database**: PostgreSQL (Supabase)
 - **ORM**: Drizzle ORM
 - **Authentication**: Better Auth
-- **AI Providers**: 
+- **AI Providers**:
   - Google Gemini (via @ai-sdk/google)
   - Perplexity AI (via @ai-sdk/perplexity)
   - Amazon Bedrock (via @ai-sdk/amazon-bedrock)
@@ -440,17 +445,18 @@ fetch('/api/chat', {
 QueryMate supports three AI providers, each with unique strengths:
 
 1. **Google Gemini** (`gemini`)
+
    - Fast, general-purpose AI
    - Great for coding, explanations, creative writing
    - Model: `gemini-2.0-flash-exp`
-
 2. **Perplexity AI** (`perplexity`)
+
    - Real-time web search capabilities
    - Provides citations and sources
    - Perfect for current events and research
    - Model: `llama-3.1-sonar-large-128k-online`
-
 3. **Amazon Bedrock** (`bedrock`)
+
    - Enterprise-grade Claude models
    - Advanced reasoning and analysis
    - Model: `anthropic.claude-3-5-sonnet-20240620-v1:0`
@@ -479,6 +485,7 @@ QueryMate supports three AI providers, each with unique strengths:
 ### Streaming Responses
 
 All AI responses use Server-Sent Events (SSE) for real-time streaming:
+
 - Responses appear word-by-word as they're generated
 - Better user experience with immediate feedback
 - More efficient than waiting for complete responses
@@ -519,46 +526,48 @@ messages
 
 ### Quick Testing Flow
 
-1. **Sign Up**: 
+1. **Sign Up**:
+
    ```
    POST /api/auth/sign-up/email
    Body: { "email": "test@example.com", "password": "password123", "name": "Test User" }
    ```
-   → Copy the `token` from response
 
+   → Copy the `token` from response
 2. **Get Session** (Verify authentication):
+
    ```
    GET /api/auth/sessions
    Headers: Authorization: Bearer {your_token}
    ```
-
 3. **Start New Chat with Gemini**:
+
    ```
    POST /api/chat
    Headers: Authorization: Bearer {your_token}
    Body: { "message": "Hello! Tell me about AI", "model": "gemini" }
    ```
-
 4. **Try Different AI Model**:
+
    ```
    POST /api/chat
    Headers: Authorization: Bearer {your_token}
    Body: { "message": "What's the latest tech news?", "model": "perplexity" }
    ```
-
 5. **Load Conversations**:
+
    ```
    GET /api/conversations
    Headers: Authorization: Bearer {your_token}
    ```
-
 6. **Get Message History**:
+
    ```
    GET /api/messages?conversationId={conversation_id}
    Headers: Authorization: Bearer {your_token}
    ```
-
 7. **Sign Out**:
+
    ```
    POST /api/auth/sign-out
    Headers: Authorization: Bearer {your_token}
@@ -573,20 +582,24 @@ messages
 Ensure these are set in your hosting platform (Vercel, Railway, Render, etc.):
 
 **Required:**
+
 - `SUPABASE_DB_URL`: Your production PostgreSQL connection string
 - `BETTER_AUTH_SECRET`: Secure random string (min 32 characters)
 - `BETTER_AUTH_URL`: Your production domain (e.g., https://querymate.com)
 
 **AI Providers (at least one required):**
+
 - `GOOGLE_API_KEY` & `GEMINI_MODEL`: For Google Gemini
 - `PERPLEXITY_API_KEY` & `PERPLEXITY_MODEL`: For Perplexity AI
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `BEDROCK_MODEL_ID`: For Amazon Bedrock
 
 **Optional (for OAuth):**
+
 - `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET`: For Google Sign-In
 - `GITHUB_CLIENT_ID` & `GITHUB_CLIENT_SECRET`: For GitHub Sign-In
 
 ### Deploy on Vercel
+
 ## 🎯 Use Cases
 
 - **Developers**: Get coding help from Gemini, research docs with Perplexity
@@ -595,61 +608,22 @@ Ensure these are set in your hosting platform (Vercel, Railway, Render, etc.):
 - **Students**: Learn and get explanations from multiple AI perspectives
 - **Professionals**: Compare AI responses for better decision-making
 
-## 🌟 Roadmap
-
-- [ ] Voice input support
-- [ ] File upload and analysis
-- [ ] Export conversations to PDF/Markdown
-- [ ] Shared conversations with public links
-- [ ] Custom AI model parameters (temperature, max tokens)
-- [ ] Mobile app (React Native)
-- [ ] Claude 4 and GPT-4 integration
-- [ ] Team workspaces
-
-## 📝 License
-
-MIT License - feel free to use this project for personal or commercial purposes.
-
-## 🤝 Contributing
-
-Contributions are welcome! Here's how you can help:
-
-1. 🐛 **Report Bugs**: Open an issue with details
-2. 💡 **Suggest Features**: Share your ideas in discussions
-3. 🔧 **Submit PRs**: Fix bugs or add features
-4. 📖 **Improve Docs**: Help make documentation clearer
-
-### Development Setup for Contributors
-
-```bash
-git clone https://github.com/Jaswanth1406/QueryMate.git
-cd QueryMate
-npm install
-cp .env.example .env.local  # Add your API keys
-npx drizzle-kit push
-npm run dev
-```
-
-## 📧 Support & Contact
-
-- **GitHub**: [@Jaswanth1406](https://github.com/Jaswanth1406)
-- **Issues**: [Report bugs or request features](https://github.com/Jaswanth1406/QueryMate/issues)
-- **Discussions**: [Join the conversation](https://github.com/Jaswanth1406/QueryMate/discussions)
-
 ### Deploy on Vercel
 
 1. **Fork or Clone the Repository**
 2. **Import to Vercel**
+
    - Add all environment variables
    - Deploy!
-
 3. **Post-Deployment**
+
    ```bash
    # Run database migrations
    npx drizzle-kit push
    ```
 
 Or use Vercel CLI:
+
 ```bash
 npm run build
 vercel deploy --prod
@@ -690,23 +664,26 @@ npx drizzle-kit studio
 ### Common Issues
 
 **Issue**: "Invalid model" error
+
 - **Solution**: Check that `GEMINI_MODEL`, `PERPLEXITY_MODEL`, or `BEDROCK_MODEL_ID` environment variables are set correctly
 
 **Issue**: Streaming not working in Postman
+
 - **Solution**: This is expected. Use the web UI or check database `messages` table to verify responses
 
 **Issue**: Authentication errors
+
 - **Solution**: Ensure `BETTER_AUTH_SECRET` is set and token is included in Authorization header
 
 ## 📊 API Rate Limits
 
 Be aware of rate limits for each AI provider:
 
-| Provider | Free Tier | Rate Limit |
-|----------|-----------|------------|
-| Google Gemini | 15 RPM | 1,500 requests/day |
-| Perplexity | 5 credits | 5 requests/5 minutes |
-| Amazon Bedrock | Pay-per-use | Based on AWS limits |
+| Provider       | Free Tier   | Rate Limit           |
+| -------------- | ----------- | -------------------- |
+| Google Gemini  | 15 RPM      | 1,500 requests/day   |
+| Perplexity     | 5 credits   | 5 requests/5 minutes |
+| Amazon Bedrock | Pay-per-use | Based on AWS limits  |
 
 ## 🎨 Customization
 
@@ -720,6 +697,7 @@ Be aware of rate limits for each AI provider:
 ### Styling
 
 The app uses Tailwind CSS with custom configurations:
+
 - Gradients: `from-purple-600 to-fuchsia-500`
 - Animations: `slideInLeft`, `slideInRight`
 - Components: Radix UI primitives
@@ -774,18 +752,21 @@ QueryMate/
 ## 🔒 Security Features
 
 ### Authentication & Authorization
+
 - **JWT Tokens**: Secure, stateless authentication
 - **Password Hashing**: bcrypt for secure password storage
 - **Session Management**: Automatic token expiration and refresh
 - **Protected Routes**: Middleware validates all API requests
 
 ### API Security
+
 - **CORS Protection**: Configured for specific origins
 - **Rate Limiting**: Prevent abuse (implement with middleware)
 - **Input Validation**: All user inputs are validated
 - **SQL Injection Prevention**: Drizzle ORM parameterized queries
 
 ### Data Protection
+
 - **User Isolation**: Users can only access their own data
 - **Cascade Deletion**: Deleting conversations removes associated messages
 - **Environment Variables**: Sensitive keys stored securely
@@ -797,7 +778,7 @@ erDiagram
     USER ||--o{ SESSION : has
     USER ||--o{ CONVERSATION : creates
     CONVERSATION ||--o{ MESSAGE : contains
-    
+  
     USER {
         string id PK
         string email UK
@@ -807,7 +788,7 @@ erDiagram
         timestamp createdAt
         timestamp updatedAt
     }
-    
+  
     SESSION {
         string id PK
         string userId FK
@@ -815,7 +796,7 @@ erDiagram
         timestamp expiresAt
         json metadata
     }
-    
+  
     CONVERSATION {
         string id PK
         string userId FK
@@ -823,7 +804,7 @@ erDiagram
         timestamp createdAt
         timestamp updatedAt
     }
-    
+  
     MESSAGE {
         string id PK
         string conversationId FK
