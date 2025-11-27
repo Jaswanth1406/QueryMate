@@ -644,17 +644,10 @@ npm run dev
 - [Radix UI](https://radix-ui.com) for accessible components
 - [Tailwind CSS](https://tailwindcss.com) for beautiful styling
 
----
+### Deploy on Vercel
 
-<div align="center">
-
-**Built with ❤️ by [Jaswanth1406](https://github.com/Jaswanth1406)**
-
-If you find this project helpful, please ⭐ star the repository!
-
-[Demo](https://querymate.vercel.app) · [Documentation](https://github.com/Jaswanth1406/QueryMate#readme) · [Report Bug](https://github.com/Jaswanth1406/QueryMate/issues)
-
-</div>
+1. **Fork or Clone the Repository**
+2. **Import to Vercel**
    - Add all environment variables
    - Deploy!
 
@@ -850,12 +843,50 @@ erDiagram
 
 ## 🎯 Use Cases
 
-MIT
+- **Developers**: Get coding help from Gemini, research docs with Perplexity
+- **Researchers**: Access real-time information with citations via Perplexity
+- **Writers**: Generate content with Claude (Bedrock) or Gemini
+- **Students**: Learn and get explanations from multiple AI perspectives
+- **Professionals**: Compare AI responses for better decision-making
+
+## 📝 License
+
+MIT License - feel free to use this project for personal or commercial purposes.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Here's how you can help:
 
-## 📧 Contact
+1. 🐛 **Report Bugs**: Open an issue with details
+2. 💡 **Suggest Features**: Share your ideas in discussions
+3. 🔧 **Submit PRs**: Fix bugs or add features
+4. 📖 **Improve Docs**: Help make documentation clearer
 
-For questions or support, reach out to [Jaswanth1406](https://github.com/Jaswanth1406).
+### Development Setup for Contributors
+
+```bash
+git clone https://github.com/Jaswanth1406/QueryMate.git
+cd QueryMate
+npm install
+cp .env.example .env.local  # Add your API keys
+npx drizzle-kit push
+npm run dev
+```
+
+## 📧 Support & Contact
+
+- **GitHub**: [@Jaswanth1406](https://github.com/Jaswanth1406)
+- **Issues**: [Report bugs or request features](https://github.com/Jaswanth1406/QueryMate/issues)
+- **Discussions**: [Join the conversation](https://github.com/Jaswanth1406/QueryMate/discussions)
+
+---
+
+<div align="center">
+
+**Built with ❤️ by [Jaswanth1406](https://github.com/Jaswanth1406)**
+
+If you find this project helpful, please ⭐ star the repository!
+
+[Demo](https://querymate.vercel.app) · [Documentation](https://github.com/Jaswanth1406/QueryMate#readme) · [Report Bug](https://github.com/Jaswanth1406/QueryMate/issues)
+
+</div>
