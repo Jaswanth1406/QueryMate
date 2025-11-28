@@ -21,6 +21,19 @@ export default function AuthLoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const getErrorText = (e: unknown): string => {
+    if (typeof e === "string") return e;
+    if (e && typeof e === "object" && "message" in e) {
+      const msg = (e as { message?: unknown }).message;
+      return typeof msg === "string" ? msg : JSON.stringify(e);
+    }
+    try {
+      return JSON.stringify(e);
+    } catch {
+      return String(e);
+    }
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -39,11 +52,7 @@ export default function AuthLoginForm() {
       const response = await signIn.email({ email, password });
 
       if (response?.error) {
-        setError(
-          typeof response.error === "string"
-            ? response.error
-            : (response.error?.message ?? JSON.stringify(response.error)),
-        );
+        setError(getErrorText(response.error));
       } else if (response?.data) {
         router.push("/chat");
       } else {
