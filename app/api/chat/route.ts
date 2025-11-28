@@ -109,7 +109,7 @@ export async function POST(req: Request) {
       
       // Truncate title if it's too long (max 30 characters)
       if (generatedTitle.length > 30) {
-        generatedTitle = generatedTitle.substring(0, 2) + "...";
+        generatedTitle = generatedTitle.substring(0, 20) + "...";
       }
 
       // Update conversation with generated title

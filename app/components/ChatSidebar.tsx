@@ -151,30 +151,39 @@ export default function ChatSidebar({
 
   return (
     <>
+      {/* Mobile backdrop overlay */}
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/50 z-20 md:hidden"
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      
       <aside
-        className={`fixed z-30 left-0 top-0 h-full w-80 transition-all duration-300 ease-in-out shadow-2xl bg-white ${
+        className={`fixed z-30 left-0 top-0 h-full w-80 sm:w-80 md:w-80 transition-all duration-300 ease-in-out shadow-2xl bg-white ${
           open ? "translate-x-0" : "-translate-x-80"
         }`}
       >
         <Button
           variant="ghost"
-          className="absolute top-4 right-4 rounded-full hover:bg-gray-100 transition-colors"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 rounded-full hover:bg-gray-100 transition-colors h-8 w-8 sm:h-10 sm:w-10"
           onClick={() => setOpen(false)}
           aria-label="Close sidebar"
           size="icon"
         >
-          <X className="w-5 h-5 text-gray-600" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
         </Button>
 
         {/* User circle + name + email */}
-        <div className="flex flex-col items-center py-8 border-b bg-gradient-to-b from-purple-50 to-white">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-fuchsia-500 flex items-center justify-center text-white text-2xl font-semibold shadow-lg mb-3">
+        <div className="flex flex-col items-center py-6 sm:py-8 border-b bg-gradient-to-b from-purple-50 to-white">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-purple-600 to-fuchsia-500 flex items-center justify-center text-white text-xl sm:text-2xl font-semibold shadow-lg mb-2 sm:mb-3">
             {initial}
           </div>
-          <div className="font-bold text-lg text-gray-900">
+          <div className="font-bold text-base sm:text-lg text-gray-900">
             {user?.name ?? "User"}
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-xs sm:text-sm text-gray-500 px-4 text-center truncate max-w-full">
             {user?.email ?? "email@example.com"}
           </div>
         </div>

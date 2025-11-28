@@ -57,34 +57,34 @@ export default function ChatPage() {
         }}
       />
       <div className="flex-1 flex flex-col min-h-screen">
-        <header className="flex w-full items-center justify-between px-6 py-4 border-b bg-white/80 backdrop-blur-lg sticky top-0 z-20 shadow-sm">
-          <div className="flex items-center gap-4">
+        <header className="flex w-full items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b bg-white/80 backdrop-blur-lg sticky top-0 z-20 shadow-sm">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Button
               variant="ghost"
               size="icon"
-              className="hover:bg-purple-100 transition-colors rounded-xl"
+              className="hover:bg-purple-100 transition-colors rounded-xl h-9 w-9 sm:h-10 sm:w-10"
               onClick={() => setSidebarOpen((o) => !o)}
               aria-label={sidebarOpen ? "Close Sidebar" : "Open Sidebar"}
               suppressHydrationWarning
             >
-              <MenuIcon className="w-6 h-6 text-purple-600" />
+              <MenuIcon className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
             </Button>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-fuchsia-500 rounded-xl flex items-center justify-center shadow-lg">
-                <SparklesIcon className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-600 to-fuchsia-500 rounded-xl flex items-center justify-center shadow-lg">
+                <SparklesIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <h1 className="text-2xl font-bold select-none tracking-tight bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">
+              <h1 className="hidden sm:block text-xl sm:text-2xl font-bold select-none tracking-tight bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">
                 QUERY MATE AI
               </h1>
             </div>
           </div>
           <Button
-            className="ml-auto bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 font-semibold"
+            className="ml-auto bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-1 sm:gap-2 font-semibold text-sm px-3 sm:px-4 h-9 sm:h-10"
             onClick={handleLogout}
             suppressHydrationWarning
           >
             <LogoutIcon className="w-4 h-4" />
-            <span>Logout</span>
+            <span className="hidden sm:inline">Logout</span>
           </Button>
         </header>
         <div className="flex-1 h-0 flex flex-col">
