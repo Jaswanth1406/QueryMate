@@ -17,7 +17,12 @@ import {
 
 type Role = "user" | "assistant";
 type Message = { role: Role; content: string };
-type Conversation = { id: string; title?: string | null; createdAt?: string; userId?: string };
+type Conversation = {
+  id: string;
+  title?: string | null;
+  createdAt?: string;
+  userId?: string;
+};
 
 function titleFromMessages(messages: Message[]) {
   const firstUserMsg = messages?.find((m) => m.role === "user")?.content || "";
@@ -33,9 +38,13 @@ export default function ChatSidebar({
   setOpen: (v: boolean) => void;
   onSelectConversation: (id: string | null, title: string) => void;
 }) {
-  const [user, setUser] = useState<{ name?: string; email?: string } | null>(null);
+  const [user, setUser] = useState<{ name?: string; email?: string } | null>(
+    null,
+  );
   const [chats, setChats] = useState<Conversation[]>([]);
-  const [messagesByConv, setMessagesByConv] = useState<Record<string, Message[]>>({});
+  const [messagesByConv, setMessagesByConv] = useState<
+    Record<string, Message[]>
+  >({});
   const [search, setSearch] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -85,7 +94,11 @@ export default function ChatSidebar({
   }, []);
 
   const getChatTitle = (chat: Conversation) => {
-    if (chat.title && chat.title !== "New Chat" && chat.title !== "New Conversation") {
+    if (
+      chat.title &&
+      chat.title !== "New Chat" &&
+      chat.title !== "New Conversation"
+    ) {
       return chat.title.trim();
     }
     return titleFromMessages(messagesByConv[chat.id] || []);
@@ -108,10 +121,12 @@ export default function ChatSidebar({
           credentials: "include",
           body: JSON.stringify({ id, title: newTitle.trim() }),
         });
-        
+
         if (response.ok) {
           setChats((prev) =>
-            prev.map((c) => (c.id === id ? { ...c, title: newTitle.trim() } : c)),
+            prev.map((c) =>
+              c.id === id ? { ...c, title: newTitle.trim() } : c,
+            ),
           );
         } else {
           alert("Failed to update conversation title");
@@ -124,8 +139,9 @@ export default function ChatSidebar({
   };
 
   const handleDelete = async (id: string) => {
-    if (!id || !confirm("Delete this conversation and all its messages?")) return;
-    
+    if (!id || !confirm("Delete this conversation and all its messages?"))
+      return;
+
     try {
       const response = await fetch("/api/conversations", {
         method: "DELETE",
@@ -133,7 +149,7 @@ export default function ChatSidebar({
         credentials: "include",
         body: JSON.stringify({ id }),
       });
-      
+
       if (response.ok) {
         setChats((prev) => prev.filter((c) => c.id !== id));
         setMessagesByConv((prev) => {
@@ -163,7 +179,7 @@ export default function ChatSidebar({
           aria-hidden="true"
         />
       )}
-      
+
       <aside
         className={`fixed z-30 left-0 top-0 h-full w-80 sm:w-80 md:w-80 transition-all duration-300 ease-in-out shadow-2xl bg-white ${
           open ? "translate-x-0" : "-translate-x-80"

@@ -45,7 +45,7 @@ type ConfirmationContextValue = {
 };
 
 const ConfirmationContext = createContext<ConfirmationContextValue | null>(
-  null
+  null,
 );
 
 const useConfirmation = () => {
@@ -117,7 +117,8 @@ export const ConfirmationAccepted = ({
   // Only show when approved and in response states
   if (
     !approval?.approved ||
-    (state === "input-streaming" || state === "input-available")
+    state === "input-streaming" ||
+    state === "input-available"
   ) {
     return null;
   }
@@ -137,7 +138,8 @@ export const ConfirmationRejected = ({
   // Only show when rejected and in response states
   if (
     approval?.approved !== false ||
-    (state === "input-streaming" || state === "input-available")
+    state === "input-streaming" ||
+    state === "input-available"
   ) {
     return null;
   }

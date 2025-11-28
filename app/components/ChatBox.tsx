@@ -3,17 +3,31 @@ import { useState, useRef, useEffect } from "react";
 import * as ScrollArea from "@radix-ui/react-scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import ReactMarkdown from "react-markdown";
 import { Send, User, Bot } from "lucide-react";
 
-function Bubble({ role, children }: { role: string; children: React.ReactNode }) {
+function Bubble({
+  role,
+  children,
+}: {
+  role: string;
+  children: React.ReactNode;
+}) {
   if (role === "user") {
     return (
       <div className="flex justify-end mb-4 sm:mb-6 animate-slideInRight">
         <div className="flex items-start gap-2 sm:gap-3 max-w-[85%] sm:max-w-[75%]">
           <div className="bg-gradient-to-br from-purple-600 via-purple-500 to-fuchsia-500 text-white px-4 py-3 sm:px-6 sm:py-4 rounded-3xl rounded-tr-md shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <div className="text-sm sm:text-[15px] leading-relaxed font-medium">{children}</div>
+            <div className="text-sm sm:text-[15px] leading-relaxed font-medium">
+              {children}
+            </div>
           </div>
           <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-400 to-fuchsia-400 flex items-center justify-center shadow-md">
             <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
@@ -48,11 +62,22 @@ function TypingIndicator() {
         <div className="bg-white border border-gray-200 px-6 py-4 sm:px-8 sm:py-5 rounded-3xl rounded-tl-md shadow-md">
           <div className="flex items-center gap-2">
             <div className="flex gap-1.5">
-              <span className="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
-              <span className="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
-              <span className="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+              <span
+                className="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce"
+                style={{ animationDelay: "0ms" }}
+              ></span>
+              <span
+                className="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce"
+                style={{ animationDelay: "150ms" }}
+              ></span>
+              <span
+                className="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce"
+                style={{ animationDelay: "300ms" }}
+              ></span>
             </div>
-            <span className="text-xs sm:text-sm text-gray-500 ml-2">Thinking...</span>
+            <span className="text-xs sm:text-sm text-gray-500 ml-2">
+              Thinking...
+            </span>
           </div>
         </div>
       </div>
@@ -156,7 +181,10 @@ export default function ChatBox({
           full += chunk;
           setMessages((prev) => {
             const updated = [...prev];
-            if (updated.length && updated[updated.length - 1].role === "assistant") {
+            if (
+              updated.length &&
+              updated[updated.length - 1].role === "assistant"
+            ) {
               updated[updated.length - 1].content = full;
             } else {
               updated.push({ role: "assistant", content: full });
@@ -168,7 +196,10 @@ export default function ChatBox({
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "⚠ Unable to connect. Please try again." },
+        {
+          role: "assistant",
+          content: "⚠ Unable to connect. Please try again.",
+        },
       ]);
     }
     setLoading(false);
@@ -223,13 +254,22 @@ export default function ChatBox({
                   <ReactMarkdown
                     components={{
                       h1: ({ ...props }) => (
-                        <h1 {...props} className="text-2xl font-bold mt-4 mb-3 text-gray-900" />
+                        <h1
+                          {...props}
+                          className="text-2xl font-bold mt-4 mb-3 text-gray-900"
+                        />
                       ),
                       h2: ({ ...props }) => (
-                        <h2 {...props} className="text-xl font-semibold mt-3 mb-2 text-gray-800" />
+                        <h2
+                          {...props}
+                          className="text-xl font-semibold mt-3 mb-2 text-gray-800"
+                        />
                       ),
                       h3: ({ ...props }) => (
-                        <h3 {...props} className="text-lg font-semibold mt-2 mb-2 text-gray-800" />
+                        <h3
+                          {...props}
+                          className="text-lg font-semibold mt-2 mb-2 text-gray-800"
+                        />
                       ),
                       p: ({ ...props }) => (
                         <p {...props} className="mb-3 last:mb-0" />
@@ -240,9 +280,7 @@ export default function ChatBox({
                       ol: ({ ...props }) => (
                         <ol {...props} className="space-y-2 my-3" />
                       ),
-                      li: ({ ...props }) => (
-                        <li className="ml-4" {...props} />
-                      ),
+                      li: ({ ...props }) => <li className="ml-4" {...props} />,
                     }}
                   >
                     {m.content}
@@ -255,7 +293,10 @@ export default function ChatBox({
             {loading && <TypingIndicator />}
           </div>
         </ScrollArea.Viewport>
-        <ScrollArea.Scrollbar orientation="vertical" className="w-2 bg-gray-100 rounded-full">
+        <ScrollArea.Scrollbar
+          orientation="vertical"
+          className="w-2 bg-gray-100 rounded-full"
+        >
           <ScrollArea.Thumb className="bg-purple-400 rounded-full hover:bg-purple-500 transition-colors" />
         </ScrollArea.Scrollbar>
         <ScrollArea.Corner />

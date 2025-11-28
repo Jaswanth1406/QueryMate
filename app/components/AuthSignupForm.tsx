@@ -4,7 +4,11 @@ import { useRouter } from "next/navigation";
 import { signUp } from "@/lib/better-auth-client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { EyeOpenIcon, EyeClosedIcon, GitHubLogoIcon } from "@radix-ui/react-icons";
+import {
+  EyeOpenIcon,
+  EyeClosedIcon,
+  GitHubLogoIcon,
+} from "@radix-ui/react-icons";
 import { FcGoogle } from "react-icons/fc";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -47,7 +51,7 @@ export default function AuthSignupForm() {
         setError(
           typeof response.error === "string"
             ? response.error
-            : response.error?.message ?? JSON.stringify(response.error)
+            : (response.error?.message ?? JSON.stringify(response.error)),
         );
       } else if (response?.data) {
         router.push("/chat");
@@ -62,11 +66,18 @@ export default function AuthSignupForm() {
 
   return (
     <form className="w-full" onSubmit={handleSubmit}>
-      <h2 className="text-3xl font-bold mb-2 text-center text-purple-700">Create an account</h2>
-      <p className="mb-6 text-center text-gray-500">Sign up to start using QueryMate AI</p>
+      <h2 className="text-3xl font-bold mb-2 text-center text-purple-700">
+        Create an account
+      </h2>
+      <p className="mb-6 text-center text-gray-500">
+        Sign up to start using QueryMate AI
+      </p>
       <div className="mb-3">
         <label className="block font-medium mb-1">
-          Name: <span className="font-normal text-xs text-gray-400 ml-1">eg. Shiva M</span>
+          Name:{" "}
+          <span className="font-normal text-xs text-gray-400 ml-1">
+            eg. Shiva M
+          </span>
         </label>
         <Input
           required
@@ -80,7 +91,10 @@ export default function AuthSignupForm() {
       </div>
       <div className="mb-3">
         <label className="block font-medium mb-1">
-          Email: <span className="font-normal text-xs text-gray-400 ml-1">eg. email@example.com</span>
+          Email:{" "}
+          <span className="font-normal text-xs text-gray-400 ml-1">
+            eg. email@example.com
+          </span>
         </label>
         <Input
           required
@@ -94,7 +108,10 @@ export default function AuthSignupForm() {
       </div>
       <div className="mb-3 relative">
         <label className="block font-medium mb-1">
-          Password: <span className="font-normal text-xs text-gray-400 ml-1">eg. ••••••</span>
+          Password:{" "}
+          <span className="font-normal text-xs text-gray-400 ml-1">
+            eg. ••••••
+          </span>
         </label>
         <Input
           required
@@ -116,7 +133,10 @@ export default function AuthSignupForm() {
       </div>
       <div className="mb-4 relative">
         <label className="block font-medium mb-1">
-          Confirm Password: <span className="font-normal text-xs text-gray-400 ml-1">6+ letters/numbers</span>
+          Confirm Password:{" "}
+          <span className="font-normal text-xs text-gray-400 ml-1">
+            6+ letters/numbers
+          </span>
         </label>
         <Input
           required
@@ -144,7 +164,9 @@ export default function AuthSignupForm() {
       >
         {loading ? "Signing up..." : "Sign up"}
       </Button>
-      <div className="my-4 text-center text-gray-400 font-medium text-xs">OR CONTINUE WITH</div>
+      <div className="my-4 text-center text-gray-400 font-medium text-xs">
+        OR CONTINUE WITH
+      </div>
       <div className="flex gap-4 mb-4">
         <Button
           type="button"
@@ -165,7 +187,10 @@ export default function AuthSignupForm() {
       </div>
       <div className="text-center mt-2 text-sm">
         Already have an account?{" "}
-        <a href="/auth/login" className="text-purple-700 font-semibold underline">
+        <a
+          href="/auth/login"
+          className="text-purple-700 font-semibold underline"
+        >
           Sign in
         </a>
       </div>

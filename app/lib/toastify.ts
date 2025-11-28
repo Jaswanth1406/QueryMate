@@ -12,6 +12,9 @@ export const defaultToastOptions: ToastOptions = {
   theme: "colored",
 };
 
-export const showToast = (type: "success" | "error" | "info", message: string) => {
+export const showToast = (
+  type: "success" | "error" | "info",
+  message: string,
+) => {
   toast[type](message, defaultToastOptions);
 };

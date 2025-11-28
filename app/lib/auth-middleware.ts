@@ -16,7 +16,7 @@ export async function getAuthSession(request: Request) {
     const modifiedHeaders = new Headers(request.headers);
     const existingCookie = modifiedHeaders.get("Cookie") || "";
     const tokenCookie = `better-auth.session_token=${token}`;
-    
+
     if (existingCookie) {
       modifiedHeaders.set("Cookie", `${existingCookie}; ${tokenCookie}`);
     } else {

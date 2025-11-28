@@ -1,5 +1,5 @@
-import { createPerplexity } from '@ai-sdk/perplexity';
+import { createPerplexity } from "@ai-sdk/perplexity";
 
 export const perplexity = createPerplexity({
-  apiKey: process.env.PERPLEXITY_API_KEY ?? '',
+  apiKey: process.env.PERPLEXITY_API_KEY ?? "",
 });

@@ -1,10 +1,5 @@
 // lib/schema.ts
-import {
-  pgTable,
-  text,
-  timestamp,
-  boolean
-} from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
 
 //
 // --- Better Auth required tables ---
@@ -63,14 +58,18 @@ export const verification = pgTable("verification", {
 // --- App tables ---
 //
 export const conversations = pgTable("conversations", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   userId: text("user_id").references(() => user.id),
   title: text("title"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const messages = pgTable("messages", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   conversationId: text("conversation_id").references(() => conversations.id),
   role: text("role"), // user / assistant
   content: text("content"),

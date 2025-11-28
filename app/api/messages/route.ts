@@ -8,7 +8,7 @@ import { getAuthSession } from "@/lib/auth-middleware";
 export async function GET(req: Request) {
   try {
     const session = await getAuthSession(req);
-    
+
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -17,7 +17,10 @@ export async function GET(req: Request) {
     const conversationId = searchParams.get("conversationId");
 
     if (!conversationId) {
-      return NextResponse.json({ error: "conversationId is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "conversationId is required" },
+        { status: 400 },
+      );
     }
 
     // Verify conversation belongs to user
@@ -27,12 +30,15 @@ export async function GET(req: Request) {
       .where(
         and(
           eq(conversations.id, conversationId),
-          eq(conversations.userId, session.user.id)
-        )
+          eq(conversations.userId, session.user.id),
+        ),
       );
 
     if (!conversation) {
-      return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Conversation not found" },
+        { status: 404 },
+      );
     }
 
     const conversationMessages = await db
@@ -44,6 +50,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ messages: conversationMessages });
   } catch (error) {
     console.error("Error fetching messages:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

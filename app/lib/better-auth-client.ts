@@ -26,7 +26,15 @@ const extractErrorText = (e: unknown): string => {
 };
 
 export const signUp = {
-  async email({ name, email, password }: { name: string; email: string; password: string }) {
+  async email({
+    name,
+    email,
+    password,
+  }: {
+    name: string;
+    email: string;
+    password: string;
+  }) {
     if (!name?.trim()) {
       showToast("error", "Name is required.");
       return { error: "Name is required." };
@@ -41,7 +49,11 @@ export const signUp = {
     }
 
     try {
-      const resp = (await client.signUp.email({ name, email, password })) as unknown as ApiResult;
+      const resp = (await client.signUp.email({
+        name,
+        email,
+        password,
+      })) as unknown as ApiResult;
       if (hasError(resp) && resp.error) {
         const textError = extractErrorText(resp.error);
         showToast("error", textError);
@@ -54,15 +66,18 @@ export const signUp = {
         err instanceof Error
           ? err.message
           : typeof err === "string"
-          ? err
-          : JSON.stringify(err);
+            ? err
+            : JSON.stringify(err);
       showToast("error", message);
       return { error: message };
     }
   },
   github: async () => {
     try {
-      const resp = (await client.signIn.social({ provider: "github", callbackURL: "/chat" })) as unknown as ApiResult;
+      const resp = (await client.signIn.social({
+        provider: "github",
+        callbackURL: "/chat",
+      })) as unknown as ApiResult;
       if (hasError(resp) && resp.error) {
         const textError = extractErrorText(resp.error);
         showToast("error", textError);
@@ -75,15 +90,17 @@ export const signUp = {
         err instanceof Error
           ? err.message
           : typeof err === "string"
-          ? err
-          : JSON.stringify(err);
+            ? err
+            : JSON.stringify(err);
       showToast("error", message);
       return { error: message };
     }
   },
   google: async () => {
     try {
-      const resp = (await client.signIn.social({ provider: "google" })) as unknown as ApiResult;
+      const resp = (await client.signIn.social({
+        provider: "google",
+      })) as unknown as ApiResult;
       if (hasError(resp) && resp.error) {
         const textError = extractErrorText(resp.error);
         showToast("error", textError);
@@ -96,8 +113,8 @@ export const signUp = {
         err instanceof Error
           ? err.message
           : typeof err === "string"
-          ? err
-          : JSON.stringify(err);
+            ? err
+            : JSON.stringify(err);
       showToast("error", message);
       return { error: message };
     }
@@ -116,7 +133,10 @@ export const signIn = {
     }
 
     try {
-      const resp = (await client.signIn.email({ email, password })) as unknown as ApiResult;
+      const resp = (await client.signIn.email({
+        email,
+        password,
+      })) as unknown as ApiResult;
       if (hasError(resp) && resp.error) {
         const textError = extractErrorText(resp.error);
         showToast("error", textError);
@@ -129,15 +149,18 @@ export const signIn = {
         err instanceof Error
           ? err.message
           : typeof err === "string"
-          ? err
-          : JSON.stringify(err);
+            ? err
+            : JSON.stringify(err);
       showToast("error", message);
       return { error: message };
     }
   },
   github: async () => {
     try {
-      const resp = (await client.signIn.social({ provider: "github", callbackURL: "/chat" })) as unknown as ApiResult;
+      const resp = (await client.signIn.social({
+        provider: "github",
+        callbackURL: "/chat",
+      })) as unknown as ApiResult;
       if (hasError(resp) && resp.error) {
         const textError = extractErrorText(resp.error);
         showToast("error", textError);
@@ -150,15 +173,18 @@ export const signIn = {
         err instanceof Error
           ? err.message
           : typeof err === "string"
-          ? err
-          : JSON.stringify(err);
+            ? err
+            : JSON.stringify(err);
       showToast("error", message);
       return { error: message };
     }
   },
   google: async () => {
     try {
-      const resp = (await client.signIn.social({ provider: "google", callbackURL: "/chat" })) as unknown as ApiResult;
+      const resp = (await client.signIn.social({
+        provider: "google",
+        callbackURL: "/chat",
+      })) as unknown as ApiResult;
       if (hasError(resp) && resp.error) {
         const textError = extractErrorText(resp.error);
         showToast("error", textError);
@@ -171,8 +197,8 @@ export const signIn = {
         err instanceof Error
           ? err.message
           : typeof err === "string"
-          ? err
-          : JSON.stringify(err);
+            ? err
+            : JSON.stringify(err);
       showToast("error", message);
       return { error: message };
     }

@@ -397,42 +397,42 @@ Content-Type: application/json
 
 ```javascript
 // Use Google Gemini
-fetch('/api/chat', {
-  method: 'POST',
+fetch("/api/chat", {
+  method: "POST",
   headers: {
-    'Authorization': 'Bearer YOUR_TOKEN',
-    'Content-Type': 'application/json'
+    Authorization: "Bearer YOUR_TOKEN",
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
     message: "Explain quantum computing",
-    model: "gemini"
-  })
+    model: "gemini",
+  }),
 });
 
 // Use Perplexity (with real-time web search)
-fetch('/api/chat', {
-  method: 'POST',
+fetch("/api/chat", {
+  method: "POST",
   headers: {
-    'Authorization': 'Bearer YOUR_TOKEN',
-    'Content-Type': 'application/json'
+    Authorization: "Bearer YOUR_TOKEN",
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
     message: "What's the latest news on AI?",
-    model: "perplexity"
-  })
+    model: "perplexity",
+  }),
 });
 
 // Use Amazon Bedrock (Claude)
-fetch('/api/chat', {
-  method: 'POST',
+fetch("/api/chat", {
+  method: "POST",
   headers: {
-    'Authorization': 'Bearer YOUR_TOKEN',
-    'Content-Type': 'application/json'
+    Authorization: "Bearer YOUR_TOKEN",
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
     message: "Write a poem about technology",
-    model: "bedrock"
-  })
+    model: "bedrock",
+  }),
 });
 ```
 
@@ -445,18 +445,17 @@ fetch('/api/chat', {
 QueryMate supports three AI providers, each with unique strengths:
 
 1. **Google Gemini** (`gemini`)
-
    - Fast, general-purpose AI
    - Great for coding, explanations, creative writing
    - Model: `gemini-2.0-flash-exp`
-2. **Perplexity AI** (`perplexity`)
 
+2. **Perplexity AI** (`perplexity`)
    - Real-time web search capabilities
    - Provides citations and sources
    - Perfect for current events and research
    - Model: `llama-3.1-sonar-large-128k-online`
-3. **Amazon Bedrock** (`bedrock`)
 
+3. **Amazon Bedrock** (`bedrock`)
    - Enterprise-grade Claude models
    - Advanced reasoning and analysis
    - Model: `anthropic.claude-3-5-sonnet-20240620-v1:0`
@@ -534,12 +533,14 @@ messages
    ```
 
    → Copy the `token` from response
+
 2. **Get Session** (Verify authentication):
 
    ```
    GET /api/auth/sessions
    Headers: Authorization: Bearer {your_token}
    ```
+
 3. **Start New Chat with Gemini**:
 
    ```
@@ -547,6 +548,7 @@ messages
    Headers: Authorization: Bearer {your_token}
    Body: { "message": "Hello! Tell me about AI", "model": "gemini" }
    ```
+
 4. **Try Different AI Model**:
 
    ```
@@ -554,18 +556,21 @@ messages
    Headers: Authorization: Bearer {your_token}
    Body: { "message": "What's the latest tech news?", "model": "perplexity" }
    ```
+
 5. **Load Conversations**:
 
    ```
    GET /api/conversations
    Headers: Authorization: Bearer {your_token}
    ```
+
 6. **Get Message History**:
 
    ```
    GET /api/messages?conversationId={conversation_id}
    Headers: Authorization: Bearer {your_token}
    ```
+
 7. **Sign Out**:
 
    ```
@@ -612,9 +617,9 @@ Ensure these are set in your hosting platform (Vercel, Railway, Render, etc.):
 
 1. **Fork or Clone the Repository**
 2. **Import to Vercel**
-
    - Add all environment variables
    - Deploy!
+
 3. **Post-Deployment**
 
    ```bash
@@ -778,7 +783,7 @@ erDiagram
     USER ||--o{ SESSION : has
     USER ||--o{ CONVERSATION : creates
     CONVERSATION ||--o{ MESSAGE : contains
-  
+
     USER {
         string id PK
         string email UK
@@ -788,7 +793,7 @@ erDiagram
         timestamp createdAt
         timestamp updatedAt
     }
-  
+
     SESSION {
         string id PK
         string userId FK
@@ -796,7 +801,7 @@ erDiagram
         timestamp expiresAt
         json metadata
     }
-  
+
     CONVERSATION {
         string id PK
         string userId FK
@@ -804,7 +809,7 @@ erDiagram
         timestamp createdAt
         timestamp updatedAt
     }
-  
+
     MESSAGE {
         string id PK
         string conversationId FK

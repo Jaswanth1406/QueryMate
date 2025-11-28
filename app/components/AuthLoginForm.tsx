@@ -4,7 +4,11 @@ import { useRouter } from "next/navigation";
 import { signIn } from "@/lib/better-auth-client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { EyeOpenIcon, EyeClosedIcon, GitHubLogoIcon } from "@radix-ui/react-icons";
+import {
+  EyeOpenIcon,
+  EyeClosedIcon,
+  GitHubLogoIcon,
+} from "@radix-ui/react-icons";
 import { FcGoogle } from "react-icons/fc";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -38,7 +42,7 @@ export default function AuthLoginForm() {
         setError(
           typeof response.error === "string"
             ? response.error
-            : response.error?.message ?? JSON.stringify(response.error)
+            : (response.error?.message ?? JSON.stringify(response.error)),
         );
       } else if (response?.data) {
         router.push("/chat");
@@ -53,13 +57,18 @@ export default function AuthLoginForm() {
 
   return (
     <form className="w-full" onSubmit={handleSubmit}>
-      <h2 className="text-3xl font-bold mb-2 text-center text-purple-700">Welcome back</h2>
+      <h2 className="text-3xl font-bold mb-2 text-center text-purple-700">
+        Welcome back
+      </h2>
       <p className="mb-6 text-center text-gray-500">
         Enter your credentials to access your account
       </p>
       <div className="mb-3">
         <label className="block font-medium mb-1">
-          Email: <span className="font-normal text-xs text-gray-400 ml-1">eg. email@example.com</span>
+          Email:{" "}
+          <span className="font-normal text-xs text-gray-400 ml-1">
+            eg. email@example.com
+          </span>
         </label>
         <Input
           required
@@ -73,7 +82,10 @@ export default function AuthLoginForm() {
       </div>
       <div className="mb-3 relative">
         <label className="block font-medium mb-1">
-          Password: <span className="font-normal text-xs text-gray-400 ml-1">eg. ••••••</span>
+          Password:{" "}
+          <span className="font-normal text-xs text-gray-400 ml-1">
+            eg. ••••••
+          </span>
         </label>
         <Input
           required
@@ -114,7 +126,9 @@ export default function AuthLoginForm() {
       >
         {loading ? "Signing in..." : "Sign in"}
       </Button>
-      <div className="my-4 text-center text-gray-400 font-medium text-xs">OR CONTINUE WITH</div>
+      <div className="my-4 text-center text-gray-400 font-medium text-xs">
+        OR CONTINUE WITH
+      </div>
       <div className="flex gap-4 mb-4">
         <Button
           type="button"
@@ -135,7 +149,10 @@ export default function AuthLoginForm() {
       </div>
       <div className="text-center mt-2 text-sm">
         Don&apos;t have an account?{" "}
-        <a href="/auth/signup" className="text-purple-700 font-semibold underline">
+        <a
+          href="/auth/signup"
+          className="text-purple-700 font-semibold underline"
+        >
           Sign up
         </a>
       </div>

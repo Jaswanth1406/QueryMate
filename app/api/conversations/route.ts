@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     console.error("Error creating conversation:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
     console.error("Error fetching conversations:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -66,21 +66,24 @@ export async function PUT(req: Request) {
     if (!id)
       return NextResponse.json(
         { error: "Conversation ID required" },
-        { status: 400 }
+        { status: 400 },
       );
 
     const [updated] = await db
       .update(conversations)
       .set({ title })
       .where(
-        and(eq(conversations.id, id), eq(conversations.userId, session.user.id))
+        and(
+          eq(conversations.id, id),
+          eq(conversations.userId, session.user.id),
+        ),
       )
       .returning();
 
     if (!updated)
       return NextResponse.json(
         { error: "Conversation not found" },
-        { status: 404 }
+        { status: 404 },
       );
 
     return NextResponse.json({ conversation: updated });
@@ -88,7 +91,7 @@ export async function PUT(req: Request) {
     console.error("Error updating conversation:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -104,7 +107,7 @@ export async function DELETE(req: Request) {
     if (!id)
       return NextResponse.json(
         { error: "Conversation ID required" },
-        { status: 400 }
+        { status: 400 },
       );
 
     // DELETE messages first
@@ -114,14 +117,17 @@ export async function DELETE(req: Request) {
     const [deleted] = await db
       .delete(conversations)
       .where(
-        and(eq(conversations.id, id), eq(conversations.userId, session.user.id))
+        and(
+          eq(conversations.id, id),
+          eq(conversations.userId, session.user.id),
+        ),
       )
       .returning();
 
     if (!deleted)
       return NextResponse.json(
         { error: "Conversation not found" },
-        { status: 404 }
+        { status: 404 },
       );
 
     return NextResponse.json({ message: "Conversation & messages deleted" });
@@ -129,7 +135,7 @@ export async function DELETE(req: Request) {
     console.error("Error deleting conversation:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

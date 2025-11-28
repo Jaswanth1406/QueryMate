@@ -12,14 +12,18 @@ import { getAuthSession } from "@/lib/auth-middleware";
 export async function POST(req: Request) {
   try {
     const session = await getAuthSession(req);
-    
+
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
     let { conversationId } = body as { conversationId?: string };
-    const { message, title, model = "gemini" } = body as {
+    const {
+      message,
+      title,
+      model = "gemini",
+    } = body as {
       message?: string;
       title?: string;
       model?: string;
@@ -28,7 +32,7 @@ export async function POST(req: Request) {
     if (!message) {
       return NextResponse.json(
         { error: "message is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -37,7 +41,7 @@ export async function POST(req: Request) {
     if (!validModels.includes(model)) {
       return NextResponse.json(
         { error: "Invalid model selected" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -50,7 +54,7 @@ export async function POST(req: Request) {
           title: title || "New Chat",
         })
         .returning();
-      
+
       conversationId = newConversation.id;
     } else {
       // Verify conversation belongs to user
@@ -60,12 +64,15 @@ export async function POST(req: Request) {
         .where(
           and(
             eq(conversations.id, conversationId),
-            eq(conversations.userId, session.user.id)
-          )
+            eq(conversations.userId, session.user.id),
+          ),
         );
 
       if (!conversation) {
-        return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: "Conversation not found" },
+          { status: 404 },
+        );
       }
     }
 
@@ -89,20 +96,23 @@ export async function POST(req: Request) {
 
     if (isFirstMessage) {
       // Generate title using LLM
-      const titleModel = 
-        model === "gemini" ? gemini(process.env.GEMINI_MODEL!) :
-        model === "perplexity" ? perplexity(process.env.PERPLEXITY_MODEL!) :
-        bedrock(process.env.BEDROCK_MODEL_ID!);
+      const titleModel =
+        model === "gemini"
+          ? gemini(process.env.GEMINI_MODEL!)
+          : model === "perplexity"
+            ? perplexity(process.env.PERPLEXITY_MODEL!)
+            : bedrock(process.env.BEDROCK_MODEL_ID!);
 
       const titleGen = await streamText({
         model: titleModel,
         messages: [
-          { 
-            role: "system", 
-            content: "Summarize the user's message into a short 3 word title. Output ONLY 3 words, no quotes or punctuation." 
+          {
+            role: "system",
+            content:
+              "Summarize the user's message into a short 3 word title. Output ONLY 3 words, no quotes or punctuation.",
           },
-          { role: "user", content: message }
-        ]
+          { role: "user", content: message },
+        ],
       });
 
       let generatedTitle = "";
@@ -112,7 +122,7 @@ export async function POST(req: Request) {
 
       // Clean up the title and limit length
       generatedTitle = generatedTitle.replace(/['"]/g, "").trim();
-      
+
       // Truncate title if it's too long (max 30 characters)
       if (generatedTitle.length > 30) {
         generatedTitle = generatedTitle.substring(0, 20) + "...";
@@ -131,10 +141,12 @@ export async function POST(req: Request) {
     }));
 
     // Select AI model based on user choice
-    const selectedModel = 
-      model === "gemini" ? gemini(process.env.GEMINI_MODEL!) :
-      model === "perplexity" ? perplexity(process.env.PERPLEXITY_MODEL!) :
-      bedrock(process.env.BEDROCK_MODEL_ID!);
+    const selectedModel =
+      model === "gemini"
+        ? gemini(process.env.GEMINI_MODEL!)
+        : model === "perplexity"
+          ? perplexity(process.env.PERPLEXITY_MODEL!)
+          : bedrock(process.env.BEDROCK_MODEL_ID!);
 
     // Call AI
     const response = await streamText({
@@ -161,6 +173,9 @@ export async function POST(req: Request) {
     return response.toTextStreamResponse();
   } catch (error) {
     console.error("Error in chat:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
