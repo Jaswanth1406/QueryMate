@@ -34,7 +34,7 @@ export const signUp = {
     name: string;
     email: string;
     password: string;
-  }) {
+  }): Promise<ApiResult> {
     if (!name?.trim()) {
       showToast("error", "Name is required.");
       return { error: "Name is required." };
@@ -60,7 +60,7 @@ export const signUp = {
         return { error: textError };
       }
       showToast("success", "Account created successfully!");
-      return resp;
+      return { data: resp };
     } catch (err: unknown) {
       const message =
         err instanceof Error
@@ -72,7 +72,7 @@ export const signUp = {
       return { error: message };
     }
   },
-  github: async () => {
+  github: async (): Promise<ApiResult> => {
     try {
       const resp = (await client.signIn.social({
         provider: "github",
@@ -84,7 +84,7 @@ export const signUp = {
         return { error: textError };
       }
       showToast("success", "Signed in with GitHub!");
-      return resp;
+      return { data: resp };
     } catch (err: unknown) {
       const message =
         err instanceof Error
@@ -96,7 +96,7 @@ export const signUp = {
       return { error: message };
     }
   },
-  google: async () => {
+  google: async (): Promise<ApiResult> => {
     try {
       const resp = (await client.signIn.social({
         provider: "google",
@@ -107,7 +107,7 @@ export const signUp = {
         return { error: textError };
       }
       showToast("success", "Signed in with Google!");
-      return resp;
+      return { data: resp };
     } catch (err: unknown) {
       const message =
         err instanceof Error
@@ -122,7 +122,7 @@ export const signUp = {
 };
 
 export const signIn = {
-  async email({ email, password }: { email: string; password: string }) {
+  async email({ email, password }: { email: string; password: string }): Promise<ApiResult> {
     if (!emailRegex.test(email)) {
       showToast("error", "Invalid email address.");
       return { error: "Invalid email address." };
@@ -143,7 +143,7 @@ export const signIn = {
         return { error: textError };
       }
       showToast("success", "Signed in successfully!");
-      return resp;
+      return { data: resp };
     } catch (err: unknown) {
       const message =
         err instanceof Error
@@ -155,7 +155,7 @@ export const signIn = {
       return { error: message };
     }
   },
-  github: async () => {
+  github: async (): Promise<ApiResult> => {
     try {
       const resp = (await client.signIn.social({
         provider: "github",
@@ -167,7 +167,7 @@ export const signIn = {
         return { error: textError };
       }
       showToast("success", "Signed in with GitHub!");
-      return resp;
+      return { data: resp };
     } catch (err: unknown) {
       const message =
         err instanceof Error
@@ -179,7 +179,7 @@ export const signIn = {
       return { error: message };
     }
   },
-  google: async () => {
+  google: async (): Promise<ApiResult> => {
     try {
       const resp = (await client.signIn.social({
         provider: "google",
@@ -191,7 +191,7 @@ export const signIn = {
         return { error: textError };
       }
       showToast("success", "Signed in with Google!");
-      return resp;
+      return { data: resp };
     } catch (err: unknown) {
       const message =
         err instanceof Error
