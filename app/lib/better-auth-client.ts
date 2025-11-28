@@ -14,9 +14,17 @@ const hasError = (x: unknown): x is { error: unknown } =>
 
 const extractErrorText = (e: unknown): string => {
   if (typeof e === "string") return e;
-  if (e && typeof e === "object" && "message" in e) {
-    const msg = (e as { message?: unknown }).message;
-    return typeof msg === "string" ? msg : JSON.stringify(e);
+  if (e && typeof e === "object") {
+    // Check for Arcjet-style error: { error: "message", status: 400 }
+    if ("error" in e) {
+      const err = (e as { error?: unknown }).error;
+      if (typeof err === "string") return err;
+    }
+    // Check for standard error: { message: "..." }
+    if ("message" in e) {
+      const msg = (e as { message?: unknown }).message;
+      if (typeof msg === "string") return msg;
+    }
   }
   try {
     return JSON.stringify(e);
