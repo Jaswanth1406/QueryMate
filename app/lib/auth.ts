@@ -8,7 +8,10 @@ import { user, session, account, verification } from "./schema";
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
 
-  trustedOrigins: ["http://localhost:3000"],
+  trustedOrigins: [
+    "http://localhost:3000",
+    "https://query-mate-sable.vercel.app",
+  ],
 
   advanced: {
     useSecureCookies: false,

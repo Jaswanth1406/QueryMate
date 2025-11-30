@@ -24,7 +24,7 @@ export const session = pgTable("session", {
   userAgent: text("user_agent"),
   userId: text("user_id")
     .notNull()
-    .references(() => user.id),
+    .references(() => user.id, { onDelete: "cascade" }),
 });
 
 export const account = pgTable("account", {
@@ -33,7 +33,7 @@ export const account = pgTable("account", {
   providerId: text("provider_id").notNull(),
   userId: text("user_id")
     .notNull()
-    .references(() => user.id),
+    .references(() => user.id, { onDelete: "cascade" }),
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
   idToken: text("id_token"),
@@ -61,7 +61,7 @@ export const conversations = pgTable("conversations", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  userId: text("user_id").references(() => user.id),
+  userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
   title: text("title"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -70,7 +70,9 @@ export const messages = pgTable("messages", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  conversationId: text("conversation_id").references(() => conversations.id),
+  conversationId: text("conversation_id").references(() => conversations.id, {
+    onDelete: "cascade",
+  }),
   role: text("role"), // user / assistant
   content: text("content"),
   createdAt: timestamp("created_at").defaultNow(),
