@@ -24,12 +24,12 @@ function Bubble({
     return (
       <div className="flex justify-end mb-4 sm:mb-6 animate-slideInRight">
         <div className="flex items-start gap-2 sm:gap-3 max-w-[85%] sm:max-w-[75%]">
-          <div className="bg-gradient-to-br from-purple-600 via-purple-500 to-fuchsia-500 text-white px-4 py-3 sm:px-6 sm:py-4 rounded-3xl rounded-tr-md shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <div className="bg-black text-white px-4 py-3 sm:px-6 sm:py-4 rounded-3xl rounded-tr-md shadow-lg hover:shadow-xl transition-shadow duration-300">
             <div className="text-sm sm:text-[15px] leading-relaxed font-medium">
               {children}
             </div>
           </div>
-          <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-400 to-fuchsia-400 flex items-center justify-center shadow-md">
+          <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-800 flex items-center justify-center shadow-md">
             <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
         </div>
@@ -39,11 +39,11 @@ function Bubble({
   return (
     <div className="flex justify-start mb-4 sm:mb-6 animate-slideInLeft">
       <div className="flex items-start gap-2 sm:gap-3 max-w-[90%] sm:max-w-[85%]">
-        <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-md">
+        <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-gray-700 to-gray-600 flex items-center justify-center shadow-md">
           <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
         </div>
         <div className="bg-white border border-gray-200 text-gray-800 px-4 py-3 sm:px-6 sm:py-4 rounded-3xl rounded-tl-md shadow-md hover:shadow-lg transition-shadow duration-300">
-          <div className="prose prose-sm max-w-none prose-headings:text-gray-800 prose-p:text-gray-700 prose-p:leading-relaxed prose-a:text-purple-600 prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 prose-code:text-purple-600 prose-code:bg-purple-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-50 prose-pre:border prose-pre:border-gray-200">
+          <div className="prose prose-sm max-w-none prose-headings:text-gray-800 prose-p:text-gray-700 prose-p:leading-relaxed prose-a:text-gray-900 prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 prose-code:text-gray-800 prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-50 prose-pre:border prose-pre:border-gray-200">
             {children}
           </div>
         </div>
@@ -56,22 +56,22 @@ function TypingIndicator() {
   return (
     <div className="flex justify-start mb-4 sm:mb-6 animate-slideInLeft">
       <div className="flex items-start gap-2 sm:gap-3">
-        <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-md">
+        <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-gray-700 to-gray-600 flex items-center justify-center shadow-md">
           <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
         </div>
         <div className="bg-white border border-gray-200 px-6 py-4 sm:px-8 sm:py-5 rounded-3xl rounded-tl-md shadow-md">
           <div className="flex items-center gap-2">
             <div className="flex gap-1.5">
               <span
-                className="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce"
+                className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce"
                 style={{ animationDelay: "0ms" }}
               ></span>
               <span
-                className="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce"
+                className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce"
                 style={{ animationDelay: "150ms" }}
               ></span>
               <span
-                className="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce"
+                className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce"
                 style={{ animationDelay: "300ms" }}
               ></span>
             </div>
@@ -297,14 +297,14 @@ export default function ChatBox({
           orientation="vertical"
           className="w-2 bg-gray-100 rounded-full"
         >
-          <ScrollArea.Thumb className="bg-purple-400 rounded-full hover:bg-purple-500 transition-colors" />
+          <ScrollArea.Thumb className="bg-gray-400 rounded-full hover:bg-gray-500 transition-colors" />
         </ScrollArea.Scrollbar>
         <ScrollArea.Corner />
       </ScrollArea.Root>
 
       <div className="flex-shrink-0 border-t bg-white shadow-lg">
         <div className="max-w-5xl mx-auto px-3 py-3 sm:px-6 sm:py-5 md:px-16 lg:px-24">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 bg-gray-50 rounded-2xl p-2 border-2 border-transparent focus-within:border-purple-400 focus-within:bg-white transition-all duration-300 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 bg-gray-50 rounded-2xl p-2 border-2 border-transparent focus-within:border-gray-400 focus-within:bg-white transition-all duration-300 shadow-sm">
             <Select value={selectedModel} onValueChange={setSelectedModel}>
               <SelectTrigger className="w-full sm:w-[180px] bg-white border-0 focus:ring-0 h-10">
                 <SelectValue placeholder="Select AI" />
@@ -322,10 +322,11 @@ export default function ChatBox({
                     <span>Perplexity</span>
                   </div>
                 </SelectItem>
-                <SelectItem value="bedrock">
+                <SelectItem value="claude" disabled>
                   <div className="flex items-center gap-2">
-                    <span className="text-base">☁</span>
-                    <span>Amazon Bedrock</span>
+                    <span className="text-base">🤖</span>
+                    <span className="text-gray-400">Claude</span>
+                    <span className="text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full ml-1">Coming Soon</span>
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -347,7 +348,7 @@ export default function ChatBox({
               <Button
                 onClick={handleSubmit}
                 disabled={loading || !input.trim()}
-                className="bg-gradient-to-r from-purple-600 to-fuchsia-500 hover:from-purple-700 hover:to-fuchsia-600 text-white rounded-xl px-4 sm:px-6 py-2 sm:py-3 h-10 font-semibold shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 flex-shrink-0"
+                className="bg-black hover:bg-gray-800 text-white rounded-xl px-4 sm:px-6 py-2 sm:py-3 h-10 font-semibold shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 flex-shrink-0"
               >
                 <Send className="w-4 h-4" />
                 <span className="hidden sm:inline">Send</span>

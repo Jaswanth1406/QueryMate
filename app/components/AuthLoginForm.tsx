@@ -66,7 +66,7 @@ export default function AuthLoginForm() {
 
   return (
     <form className="w-full" onSubmit={handleSubmit}>
-      <h2 className="text-3xl font-bold mb-2 text-center text-purple-700">
+      <h2 className="text-3xl font-bold mb-2 text-center text-gray-900">
         Welcome back
       </h2>
       <p className="mb-6 text-center text-gray-500">
@@ -130,7 +130,7 @@ export default function AuthLoginForm() {
       )}
       <Button
         type="submit"
-        className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded mb-4 font-bold shadow hover:shadow-lg transition"
+        className="w-full bg-black hover:bg-gray-800 text-white py-2 rounded mb-4 font-bold shadow hover:shadow-lg transition"
         disabled={loading}
       >
         {loading ? "Signing in..." : "Sign in"}
@@ -160,7 +160,7 @@ export default function AuthLoginForm() {
         Don&apos;t have an account?{" "}
         <a
           href="/auth/signup"
-          className="text-purple-700 font-semibold underline"
+          className="text-gray-900 font-semibold underline hover:text-gray-700"
         >
           Sign up
         </a>

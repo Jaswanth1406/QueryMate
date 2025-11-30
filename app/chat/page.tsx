@@ -68,7 +68,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="h-screen w-screen flex bg-gradient-to-br from-gray-50 via-purple-50 to-fuchsia-50 overflow-hidden">
+    <div className="h-screen w-screen flex bg-gradient-to-b from-white to-gray-50 overflow-hidden">
       <ChatSidebar
         open={sidebarOpen}
         setOpen={setSidebarOpen}
@@ -84,18 +84,18 @@ export default function ChatPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="hover:bg-purple-100 transition-colors rounded-xl h-9 w-9 sm:h-10 sm:w-10"
+              className="hover:bg-gray-100 transition-colors rounded-xl h-9 w-9 sm:h-10 sm:w-10"
               onClick={() => setSidebarOpen((o) => !o)}
               aria-label={sidebarOpen ? "Close Sidebar" : "Open Sidebar"}
               suppressHydrationWarning
             >
-              <MenuIcon className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+              <MenuIcon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
             </Button>
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-600 to-fuchsia-500 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-xl flex items-center justify-center shadow-lg">
                 <SparklesIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <h1 className="hidden sm:block text-xl sm:text-2xl font-bold select-none tracking-tight bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">
+              <h1 className="hidden sm:block text-xl sm:text-2xl font-bold select-none tracking-tight text-gray-900">
                 QUERY MATE AI
               </h1>
             </div>

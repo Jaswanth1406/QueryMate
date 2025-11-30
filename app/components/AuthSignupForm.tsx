@@ -75,7 +75,7 @@ export default function AuthSignupForm() {
 
   return (
     <form className="w-full" onSubmit={handleSubmit}>
-      <h2 className="text-3xl font-bold mb-2 text-center text-purple-700">
+      <h2 className="text-3xl font-bold mb-2 text-center text-gray-900">
         Create an account
       </h2>
       <p className="mb-6 text-center text-gray-500">
@@ -168,7 +168,7 @@ export default function AuthSignupForm() {
       {error && <div className="text-red-500 mb-2">{error}</div>}
       <Button
         type="submit"
-        className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 mb-4 font-bold shadow hover:shadow-lg transition"
+        className="w-full bg-black hover:bg-gray-800 text-white py-2 mb-4 font-bold shadow hover:shadow-lg transition"
         disabled={loading}
       >
         {loading ? "Signing up..." : "Sign up"}
@@ -198,7 +198,7 @@ export default function AuthSignupForm() {
         Already have an account?{" "}
         <a
           href="/auth/login"
-          className="text-purple-700 font-semibold underline"
+          className="text-gray-900 font-semibold underline hover:text-gray-700"
         >
           Sign in
         </a>

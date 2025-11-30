@@ -196,8 +196,8 @@ export default function ChatSidebar({
         </Button>
 
         {/* User circle + name + email */}
-        <div className="flex flex-col items-center py-6 sm:py-8 border-b bg-gradient-to-b from-purple-50 to-white">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-purple-600 to-fuchsia-500 flex items-center justify-center text-white text-xl sm:text-2xl font-semibold shadow-lg mb-2 sm:mb-3">
+        <div className="flex flex-col items-center py-6 sm:py-8 border-b bg-gradient-to-b from-gray-50 to-white">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black flex items-center justify-center text-white text-xl sm:text-2xl font-semibold shadow-lg mb-2 sm:mb-3">
             {initial}
           </div>
           <div className="font-bold text-base sm:text-lg text-gray-900">
@@ -215,11 +215,11 @@ export default function ChatSidebar({
               setActiveId(null);
               onSelectConversation(null, "New Chat");
             }}
-            className="flex items-center gap-2 justify-center bg-gradient-to-r from-purple-600 to-fuchsia-500 hover:from-purple-700 hover:to-fuchsia-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 py-3 font-semibold"
+            className="flex items-center gap-2 justify-center bg-black hover:bg-gray-800 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 py-3 font-semibold"
           >
             <PlusIcon className="w-5 h-5" /> New Chat
           </Button>
-          <div className="flex items-center rounded-xl border-2 border-gray-200 px-3 py-2 focus-within:border-purple-400 transition-colors bg-gray-50 focus-within:bg-white">
+          <div className="flex items-center rounded-xl border-2 border-gray-200 px-3 py-2 focus-within:border-gray-400 transition-colors bg-gray-50 focus-within:bg-white">
             <Search className="w-5 h-5 text-gray-400" />
             <Input
               type="text"
@@ -248,7 +248,7 @@ export default function ChatSidebar({
                         key={chat.id}
                         className={`flex items-center gap-2 rounded-xl transition-all duration-200 px-2 py-1 ${
                           activeId === chat.id
-                            ? "bg-gradient-to-r from-purple-100 to-fuchsia-100 shadow-sm"
+                            ? "bg-gray-100 shadow-sm"
                             : "hover:bg-gray-100"
                         }`}
                       >
@@ -261,7 +261,7 @@ export default function ChatSidebar({
                           }}
                         >
                           <div className="flex items-center gap-2 min-w-0">
-                            <Sparkles className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                            <Sparkles className="w-4 h-4 text-gray-500 flex-shrink-0" />
                             <span className="truncate block">{chatTitle}</span>
                           </div>
                         </button>
@@ -322,7 +322,7 @@ export default function ChatSidebar({
               orientation="vertical"
               className="w-2 bg-gray-100 rounded-full"
             >
-              <ScrollArea.Thumb className="bg-purple-400 rounded-full hover:bg-purple-500 transition-colors" />
+              <ScrollArea.Thumb className="bg-gray-400 rounded-full hover:bg-gray-500 transition-colors" />
             </ScrollArea.Scrollbar>
             <ScrollArea.Corner />
           </ScrollArea.Root>
