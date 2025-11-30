@@ -326,7 +326,9 @@ export default function ChatBox({
                   <div className="flex items-center gap-2">
                     <span className="text-base">🤖</span>
                     <span className="text-gray-400">Claude</span>
-                    <span className="text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full ml-1">Coming Soon</span>
+                    <span className="text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full ml-1">
+                      Coming Soon
+                    </span>
                   </div>
                 </SelectItem>
               </SelectContent>

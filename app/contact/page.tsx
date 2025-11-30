@@ -28,8 +28,8 @@ export default function ContactPage() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Contact Us</h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Have a question or feedback? We&apos;d love to hear from you. Send us a message and
-            we&apos;ll respond as soon as possible.
+            Have a question or feedback? We&apos;d love to hear from you. Send
+            us a message and we&apos;ll respond as soon as possible.
           </p>
         </div>
 
@@ -41,7 +41,9 @@ export default function ContactPage() {
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <MessageSquare className="w-8 h-8 text-green-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Message Sent!</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Message Sent!
+                </h3>
                 <p className="text-gray-600">
                   Thank you for reaching out. We&apos;ll get back to you soon.
                 </p>
@@ -61,7 +63,10 @@ export default function ContactPage() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor="name"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     Name
                   </label>
                   <Input
@@ -76,7 +81,10 @@ export default function ContactPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     Email
                   </label>
                   <Input
@@ -91,7 +99,10 @@ export default function ContactPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor="message"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     Message
                   </label>
                   <Textarea
@@ -143,7 +154,9 @@ export default function ContactPage() {
                   <MessageSquare className="w-6 h-6 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Live Chat</h3>
+                  <h3 className="font-semibold text-gray-900 mb-1">
+                    Live Chat
+                  </h3>
                   <p className="text-gray-600 text-sm mb-2">
                     Available Monday to Friday, 9am - 5pm
                   </p>
@@ -168,7 +181,9 @@ export default function ContactPage() {
 
             {/* FAQ Teaser */}
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100">
-              <h3 className="font-semibold text-gray-900 mb-2">Frequently Asked Questions</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">
+                Frequently Asked Questions
+              </h3>
               <p className="text-gray-600 text-sm mb-4">
                 Find quick answers to common questions about QueryMate.
               </p>
