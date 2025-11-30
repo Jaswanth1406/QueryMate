@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Zap, Shield, Sparkles } from "lucide-react";
+import { MessageSquare, Zap, Globe, Sparkles } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -87,12 +87,14 @@ export default function HomePage() {
 
               <div className="bg-white rounded-2xl p-6 shadow-sm border hover:shadow-md transition-shadow">
                 <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4 mx-auto">
-                  <Shield className="w-6 h-6 text-green-600" />
+                  <Globe className="w-6 h-6 text-green-600" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2">Secure & Private</h3>
+                <h3 className="font-semibold text-lg mb-2">
+                  Multiple AI Models
+                </h3>
                 <p className="text-gray-600 text-sm">
-                  Your conversations are protected with enterprise-grade
-                  security and encryption.
+                  Choose from Google Gemini, Perplexity, and more AI models to
+                  suit your needs.
                 </p>
               </div>
             </div>
