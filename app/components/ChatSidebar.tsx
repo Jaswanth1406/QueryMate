@@ -190,9 +190,12 @@ export default function ChatSidebar({
               </span>
             </div>
             <div className="space-y-2">
-              {/* Gemini Usage */}
+              {/* Google/Gemini Usage */}
               <div className="flex items-center gap-2">
                 <span className="text-xs">🧠</span>
+                <span className="text-[10px] text-gray-600 dark:text-gray-400 w-12">
+                  Google
+                </span>
                 <div className="flex-1">
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
                     <div
@@ -218,10 +221,20 @@ export default function ChatSidebar({
               {/* Perplexity - Unlimited */}
               <div className="flex items-center gap-2">
                 <span className="text-xs">🔍</span>
-                <span className="text-[10px] text-gray-600 dark:text-gray-400">
+                <span className="text-[10px] text-gray-600 dark:text-gray-400 w-12">
                   Perplexity
                 </span>
                 <span className="text-[10px] text-purple-500 dark:text-purple-400 font-medium ml-auto">
+                  ∞ Unlimited
+                </span>
+              </div>
+              {/* Groq - Unlimited */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs">⚡</span>
+                <span className="text-[10px] text-gray-600 dark:text-gray-400 w-12">
+                  Groq
+                </span>
+                <span className="text-[10px] text-orange-500 dark:text-orange-400 font-medium ml-auto">
                   ∞ Unlimited
                 </span>
               </div>

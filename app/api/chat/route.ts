@@ -3,8 +3,9 @@ import { db } from "@/lib/lib";
 import { messages, conversations, user, TOKEN_LIMITS } from "@/lib/schema";
 import { streamText } from "ai";
 import { gemini } from "@/lib/ai-gemini";
-import { bedrock } from "@/lib/ai-bedrock";
 import { perplexity } from "@/lib/ai-perplexity";
+import { groq } from "@/lib/ai-groq";
+import { MODELS, getModel } from "@/lib/models";
 import { eq, and, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth-middleware";
@@ -45,16 +46,16 @@ async function checkAndResetDailyTokens(userId: string) {
   return userData;
 }
 
-// Helper to check if user has exceeded limits (Gemini only)
+// Helper to check if user has exceeded limits (Gemini only for now)
 function checkLimits(
   userData: {
     tokensUsedGemini: number;
     requestsUsedGemini: number;
   },
-  model: string,
+  provider: string,
 ): { exceeded: boolean; message: string } {
-  // Only check limits for Gemini (Perplexity doesn't return token usage)
-  if (model === "gemini") {
+  // Only check limits for Google models (they return token usage)
+  if (provider === "google") {
     if (userData.tokensUsedGemini >= TOKEN_LIMITS.gemini.dailyTokens) {
       return {
         exceeded: true,
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
     const {
       message,
       title,
-      model = "gemini",
+      model = "gemini-2.5-flash", // Default model
     } = body as {
       message?: string;
       title?: string;
@@ -99,9 +100,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate model
-    const validModels = ["gemini", "perplexity", "bedrock"];
-    if (!validModels.includes(model)) {
+    // Validate model exists in our config
+    const modelConfig = getModel(model);
+    if (!modelConfig) {
       return NextResponse.json(
         { error: "Invalid model selected" },
         { status: 400 },
@@ -115,7 +116,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user has exceeded limits
-    const limitCheck = checkLimits(userData, model);
+    const limitCheck = checkLimits(userData, modelConfig.provider);
     if (limitCheck.exceeded) {
       return NextResponse.json({ error: limitCheck.message }, { status: 429 });
     }
@@ -171,45 +172,60 @@ export async function POST(req: NextRequest) {
     const messageCount = history.length;
     const isFirstMessage = messageCount === 1;
 
+    // Helper to get the AI model instance from config
+    function getAIModel(config: NonNullable<typeof modelConfig>) {
+      switch (config.provider) {
+        case "google":
+          return gemini(config.modelId);
+        case "perplexity":
+          return perplexity(config.modelId);
+        case "groq":
+          return groq(config.modelId);
+        default:
+          return gemini(config.modelId);
+      }
+    }
+
     if (isFirstMessage) {
-      // Generate title using LLM
-      const titleModel =
-        model === "gemini"
-          ? gemini(process.env.GEMINI_MODEL!)
-          : model === "perplexity"
-            ? perplexity(process.env.PERPLEXITY_MODEL!)
-            : bedrock(process.env.BEDROCK_MODEL_ID!);
+      // Generate title using LLM (use a fast model for title generation)
+      try {
+        const titleModelConfig = MODELS["gemini-2.0-flash"] || modelConfig;
+        const titleModel = getAIModel(titleModelConfig!);
 
-      const titleGen = await streamText({
-        model: titleModel,
-        messages: [
-          {
-            role: "system",
-            content:
-              "Summarize the user's message into a short 3 word title. Output ONLY 3 words, no quotes or punctuation.",
-          },
-          { role: "user", content: message },
-        ],
-      });
+        const titleGen = await streamText({
+          model: titleModel,
+          messages: [
+            {
+              role: "user",
+              content: `Generate a very short 3-word title for this message. Output ONLY the title, nothing else: "${message}"`,
+            },
+          ],
+        });
 
-      let generatedTitle = "";
-      for await (const chunk of titleGen.textStream) {
-        generatedTitle += chunk;
+        let generatedTitle = "";
+        for await (const chunk of titleGen.textStream) {
+          generatedTitle += chunk;
+        }
+
+        // Clean up the title and limit length
+        generatedTitle = generatedTitle.replace(/['"]/g, "").trim();
+
+        // Truncate title if it's too long (max 30 characters)
+        if (generatedTitle.length > 30) {
+          generatedTitle = generatedTitle.substring(0, 27) + "...";
+        }
+
+        // Update conversation with generated title
+        if (generatedTitle) {
+          await db
+            .update(conversations)
+            .set({ title: generatedTitle })
+            .where(eq(conversations.id, conversationId));
+        }
+      } catch (titleError) {
+        console.error("Error generating title:", titleError);
+        // Title generation failed, but continue with the chat
       }
-
-      // Clean up the title and limit length
-      generatedTitle = generatedTitle.replace(/['"]/g, "").trim();
-
-      // Truncate title if it's too long (max 30 characters)
-      if (generatedTitle.length > 30) {
-        generatedTitle = generatedTitle.substring(0, 20) + "...";
-      }
-
-      // Update conversation with generated title
-      await db
-        .update(conversations)
-        .set({ title: generatedTitle })
-        .where(eq(conversations.id, conversationId));
     }
 
     const formatted = history.map((m) => ({
@@ -218,12 +234,7 @@ export async function POST(req: NextRequest) {
     }));
 
     // Select AI model based on user choice
-    const selectedModel =
-      model === "gemini"
-        ? gemini(process.env.GEMINI_MODEL!)
-        : model === "perplexity"
-          ? perplexity(process.env.PERPLEXITY_MODEL!)
-          : bedrock(process.env.BEDROCK_MODEL_ID!);
+    const selectedModel = getAIModel(modelConfig);
 
     // Call AI
     const response = await streamText({
@@ -234,6 +245,8 @@ export async function POST(req: NextRequest) {
     let full = "";
     const finalConversationId = conversationId;
     const finalModel = model;
+    const finalProvider = modelConfig.provider;
+    const supportsTokenUsage = modelConfig.supportsTokenUsage;
     const userId = session.user.id;
 
     // Collect the full response and track tokens
@@ -242,9 +255,9 @@ export async function POST(req: NextRequest) {
         full += chunk;
       }
 
-      // Get token usage from the response
+      // Get token usage from the response (if supported)
       const usage = await response.usage;
-      const totalTokens = usage?.totalTokens || 0;
+      const totalTokens = supportsTokenUsage ? usage?.totalTokens || 0 : 0;
 
       // Save assistant message with token info
       await db.insert(messages).values({
@@ -255,8 +268,8 @@ export async function POST(req: NextRequest) {
         tokensUsed: totalTokens,
       });
 
-      // Update user's token usage (Gemini only - Perplexity doesn't return token usage)
-      if (finalModel === "gemini") {
+      // Update user's token usage (Google/Groq models that support token tracking)
+      if (finalProvider === "google" && totalTokens > 0) {
         await db
           .update(user)
           .set({

@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import ReactMarkdown from "react-markdown";
 import { Send, User, Bot } from "lucide-react";
 import { mutateConversations, mutateUsage } from "./ChatSidebar";
+import { MODELS, MODEL_GROUPS, type Provider } from "@/lib/models";
 
 function Bubble({
   role,
@@ -99,7 +102,8 @@ export default function ChatBox({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState("");
-  const [selectedModel, setSelectedModel] = useState<string>("gemini");
+  const [selectedModel, setSelectedModel] =
+    useState<string>("gemini-2.5-flash");
   const scrollRootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -196,8 +200,9 @@ export default function ChatBox({
             return updated;
           });
         }
-        // Response complete - revalidate usage to show updated token count
+        // Response complete - revalidate usage and conversations (for title update)
         mutateUsage();
+        mutateConversations();
       }
     } catch {
       setMessages((prev) => [
@@ -312,43 +317,48 @@ export default function ChatBox({
         <div className="max-w-5xl mx-auto px-3 py-3 sm:px-6 sm:py-5 md:px-16 lg:px-24">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-800 rounded-2xl p-2 border-2 border-transparent focus-within:border-gray-400 dark:focus-within:border-gray-600 focus-within:bg-white dark:focus-within:bg-gray-700 transition-all duration-300 shadow-sm">
             <Select value={selectedModel} onValueChange={setSelectedModel}>
-              <SelectTrigger className="w-full sm:w-[180px] bg-white dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 border-0 focus:ring-0 h-10">
-                <SelectValue placeholder="Select AI" />
+              <SelectTrigger className="w-full sm:w-[200px] bg-white dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 border-0 focus:ring-0 h-10">
+                <SelectValue placeholder="Select AI Model">
+                  {MODELS[selectedModel] && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">
+                        {MODEL_GROUPS[MODELS[selectedModel].provider].icon}
+                      </span>
+                      <span className="truncate">
+                        {MODELS[selectedModel].name}
+                      </span>
+                    </div>
+                  )}
+                </SelectValue>
               </SelectTrigger>
-              <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                <SelectItem
-                  value="gemini"
-                  className="dark:text-gray-200 dark:focus:bg-gray-700"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">🧠</span>
-                    <span>Google Gemini</span>
-                  </div>
-                </SelectItem>
-                <SelectItem
-                  value="perplexity"
-                  className="dark:text-gray-200 dark:focus:bg-gray-700"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">🔍</span>
-                    <span>Perplexity</span>
-                  </div>
-                </SelectItem>
-                <SelectItem
-                  value="claude"
-                  disabled
-                  className="dark:text-gray-400"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">🤖</span>
-                    <span className="text-gray-400 dark:text-gray-500">
-                      Claude
-                    </span>
-                    <span className="text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-full ml-1">
-                      Coming Soon
-                    </span>
-                  </div>
-                </SelectItem>
+              <SelectContent className="dark:bg-gray-800 dark:border-gray-700 max-h-80">
+                {(Object.keys(MODEL_GROUPS) as Provider[]).map((provider) => (
+                  <SelectGroup key={provider}>
+                    <SelectLabel className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 px-2 py-1.5">
+                      <span>{MODEL_GROUPS[provider].icon}</span>
+                      <span>{MODEL_GROUPS[provider].name}</span>
+                    </SelectLabel>
+                    {MODEL_GROUPS[provider].models.map((modelId) => {
+                      const model = MODELS[modelId];
+                      return (
+                        <SelectItem
+                          key={modelId}
+                          value={modelId}
+                          className="dark:text-gray-200 dark:focus:bg-gray-700 pl-6"
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">{model.name}</span>
+                            {model.description && (
+                              <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                {model.description}
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectGroup>
+                ))}
               </SelectContent>
             </Select>
             <div className="flex items-center gap-2 flex-1">
