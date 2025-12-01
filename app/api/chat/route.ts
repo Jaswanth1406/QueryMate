@@ -6,10 +6,10 @@ import { gemini } from "@/lib/ai-gemini";
 import { bedrock } from "@/lib/ai-bedrock";
 import { perplexity } from "@/lib/ai-perplexity";
 import { eq, and } from "drizzle-orm";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth-middleware";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession(req);
 

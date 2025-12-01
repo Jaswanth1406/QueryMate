@@ -1,8 +1,8 @@
 // app/api/auth/sessions/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth-middleware";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const session = await getAuthSession(req);
 

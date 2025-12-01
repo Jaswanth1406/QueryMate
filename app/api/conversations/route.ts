@@ -2,11 +2,11 @@
 import { db } from "@/lib/lib";
 import { conversations, messages } from "@/lib/schema";
 import { eq, and } from "drizzle-orm";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth-middleware";
 
 // CREATE NEW CONVERSATION
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession(req);
     if (!session)
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 }
 
 // GET USER CONVERSATIONS
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const session = await getAuthSession(req);
     if (!session)
@@ -56,7 +56,7 @@ export async function GET(req: Request) {
 }
 
 // UPDATE CONVERSATION TITLE
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
   try {
     const session = await getAuthSession(req);
     if (!session)
@@ -97,7 +97,7 @@ export async function PUT(req: Request) {
 }
 
 // DELETE CONVERSATION AND ITS MESSAGES
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
   try {
     const session = await getAuthSession(req);
     if (!session)

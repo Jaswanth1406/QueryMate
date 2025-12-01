@@ -1,8 +1,8 @@
 // lib/auth-middleware.ts
 import { auth } from "./auth";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function getAuthSession(request: Request) {
+export async function getAuthSession(request: NextRequest) {
   // Try to get token from Authorization header first (for frontend)
   const authHeader = request.headers.get("Authorization");
   let token: string | null = null;
