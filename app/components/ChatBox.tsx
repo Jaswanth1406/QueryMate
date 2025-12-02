@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import ReactMarkdown from "react-markdown";
 import {
   GlobeIcon,
   PlusIcon,
   MicIcon,
+  MicOffIcon,
   CornerDownLeftIcon,
   Loader2Icon,
 } from "lucide-react";
+import { MemoizedMarkdown } from "./MemoizedMarkdown";
 import { mutateConversations, mutateUsage } from "./ChatSidebar";
 import { MODELS, MODEL_GROUPS, type Provider } from "@/lib/models";
 import { Button } from "@/components/ui/button";
@@ -69,9 +70,80 @@ export default function ChatBox({
   const [input, setInput] = useState("");
   const [selectedModel, setSelectedModel] =
     useState<string>("gemini-2.5-flash");
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const baseTextRef = useRef<string>(""); // Store text before speech started
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const hasHistory = conversationId !== null && messages.length > 0;
+
+  // Initialize Web Speech API
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time browser capability check
+        setSpeechSupported(true);
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false; // Changed to false - stops after each phrase
+        recognition.interimResults = true;
+        recognition.lang = "en-US";
+
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          let finalTranscript = "";
+          let interimTranscript = "";
+
+          for (let i = 0; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript;
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+
+          // Show the combined transcript (base + current speech)
+          const currentTranscript = finalTranscript || interimTranscript;
+          const base = baseTextRef.current;
+          const separator = base && !base.endsWith(" ") ? " " : "";
+          setInput(base + separator + currentTranscript);
+        };
+
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+          console.error("Speech recognition error:", event.error);
+          setIsListening(false);
+        };
+
+        recognition.onend = () => {
+          setIsListening(false);
+        };
+
+        recognitionRef.current = recognition;
+      }
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) return;
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      // Save current text as base before starting speech
+      baseTextRef.current = input;
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -247,75 +319,10 @@ export default function ChatBox({
                       <p className="text-sm text-foreground">{msg.content}</p>
                     ) : (
                       <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none">
-                        <ReactMarkdown
-                          components={{
-                            h1: (props) => (
-                              <h1
-                                {...props}
-                                className="text-lg font-semibold mt-4 mb-2 text-foreground"
-                              />
-                            ),
-                            h2: (props) => (
-                              <h2
-                                {...props}
-                                className="text-base font-semibold mt-4 mb-2 text-foreground"
-                              />
-                            ),
-                            h3: (props) => (
-                              <h3
-                                {...props}
-                                className="text-sm font-semibold mt-3 mb-1 text-foreground"
-                              />
-                            ),
-                            p: (props) => (
-                              <p
-                                {...props}
-                                className="mb-3 text-foreground leading-relaxed"
-                              />
-                            ),
-                            ul: (props) => (
-                              <ul
-                                {...props}
-                                className="list-disc pl-5 mb-3 text-foreground"
-                              />
-                            ),
-                            ol: (props) => (
-                              <ol
-                                {...props}
-                                className="list-decimal pl-5 mb-3 text-foreground"
-                              />
-                            ),
-                            li: (props) => (
-                              <li {...props} className="mb-1 text-foreground" />
-                            ),
-                            strong: (props) => (
-                              <strong
-                                {...props}
-                                className="font-semibold text-foreground"
-                              />
-                            ),
-                            em: (props) => (
-                              <em
-                                {...props}
-                                className="italic text-foreground"
-                              />
-                            ),
-                            code: (props) => (
-                              <code
-                                {...props}
-                                className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-foreground"
-                              />
-                            ),
-                            pre: (props) => (
-                              <pre
-                                {...props}
-                                className="bg-muted p-3 rounded-lg overflow-x-auto my-3 text-foreground"
-                              />
-                            ),
-                          }}
-                        >
-                          {msg.content}
-                        </ReactMarkdown>
+                        <MemoizedMarkdown
+                          content={msg.content}
+                          id={`msg-${i}`}
+                        />
                       </div>
                     )}
                   </div>
@@ -372,10 +379,27 @@ export default function ChatBox({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 rounded-full"
+                  className={cn(
+                    "h-8 w-8 rounded-full transition-colors",
+                    isListening &&
+                      "bg-red-500/20 text-red-500 hover:bg-red-500/30",
+                  )}
+                  onClick={toggleListening}
+                  disabled={!speechSupported || loading}
+                  title={
+                    speechSupported
+                      ? isListening
+                        ? "Stop listening"
+                        : "Start voice input"
+                      : "Speech recognition not supported"
+                  }
                   suppressHydrationWarning
                 >
-                  <MicIcon className="h-4 w-4" />
+                  {isListening ? (
+                    <MicOffIcon className="h-4 w-4" />
+                  ) : (
+                    <MicIcon className="h-4 w-4" />
+                  )}
                 </Button>
 
                 {/* Search button with label */}
