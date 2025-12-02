@@ -8,13 +8,15 @@ export type ImageProps = Experimental_GeneratedImage & {
 
 export const Image = ({
   base64,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   uint8Array,
   mediaType,
   ...props
 }: ImageProps) => (
+  // eslint-disable-next-line @next/next/no-img-element
   <img
     {...props}
-    alt={props.alt}
+    alt={props.alt || "Generated image"}
     className={cn(
       "h-auto max-w-full overflow-hidden rounded-md",
       props.className,

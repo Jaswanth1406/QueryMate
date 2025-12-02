@@ -1,15 +1,8 @@
 "use client";
-/* eslint-disable react-hooks/static-components */
 
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
-import {
-  type CSSProperties,
-  type ElementType,
-  type JSX,
-  memo,
-  useMemo,
-} from "react";
+import { type CSSProperties, type ElementType, memo, useMemo } from "react";
 
 export type TextShimmerProps = {
   children: string;
@@ -19,6 +12,23 @@ export type TextShimmerProps = {
   spread?: number;
 };
 
+// Pre-create motion components for common elements
+const MotionP = motion.create("p");
+const MotionSpan = motion.create("span");
+const MotionDiv = motion.create("div");
+const MotionH1 = motion.create("h1");
+const MotionH2 = motion.create("h2");
+const MotionH3 = motion.create("h3");
+
+const motionComponents: Record<string, ReturnType<typeof motion.create>> = {
+  p: MotionP,
+  span: MotionSpan,
+  div: MotionDiv,
+  h1: MotionH1,
+  h2: MotionH2,
+  h3: MotionH3,
+};
+
 const ShimmerComponent = ({
   children,
   as: Component = "p",
@@ -26,9 +36,7 @@ const ShimmerComponent = ({
   duration = 2,
   spread = 2,
 }: TextShimmerProps) => {
-  const MotionComponent = motion.create(
-    Component as keyof JSX.IntrinsicElements,
-  );
+  const MotionComponent = motionComponents[Component as string] || MotionP;
 
   const dynamicSpread = useMemo(
     () => (children?.length ?? 0) * spread,

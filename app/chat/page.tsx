@@ -4,9 +4,8 @@ import { useRouter } from "next/navigation";
 import ChatSidebar from "@/components/ChatSidebar";
 import ChatBox from "@/components/ChatBox";
 import { Button } from "@/components/ui/button";
-import { showToast } from "@/lib/toastify"; // same helper used on login
+import { showToast } from "@/lib/toastify";
 
-// Custom SVG icons
 const MenuIcon = ({ className = "w-6 h-6" }) => (
   <svg
     className={className}
@@ -16,6 +15,22 @@ const MenuIcon = ({ className = "w-6 h-6" }) => (
     viewBox="0 0 24 24"
   >
     <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+  </svg>
+);
+
+const CloseIcon = ({ className = "w-6 h-6" }) => (
+  <svg
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M18 6L6 18M6 6l12 12"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
@@ -58,17 +73,13 @@ export default function ChatPage() {
   const router = useRouter();
 
   function handleLogout() {
-    // clear local token if you use it
     localStorage.removeItem("token");
-
-    // use the same toast helper & style as login
     showToast("success", "Signed out successfully!");
-
     router.push("/auth/login");
   }
 
   return (
-    <div className="h-screen w-screen flex bg-gradient-to-b from-white to-gray-50 dark:from-gray-950 dark:to-gray-900 overflow-hidden">
+    <div className="h-screen w-screen flex bg-white dark:bg-gray-950 text-black dark:text-white overflow-hidden">
       <ChatSidebar
         open={sidebarOpen}
         setOpen={setSidebarOpen}
@@ -79,36 +90,41 @@ export default function ChatPage() {
         }}
       />
       <div className="flex-1 flex flex-col min-h-screen">
-        <header className="flex w-full items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg sticky top-0 z-20 shadow-sm">
-          <div className="flex items-center gap-2 sm:gap-4">
+        <header className="flex w-full items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 relative z-40">
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
-              className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-xl h-9 w-9 sm:h-10 sm:w-10"
+              className="h-9 w-9 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
               onClick={() => setSidebarOpen((o) => !o)}
               aria-label={sidebarOpen ? "Close Sidebar" : "Open Sidebar"}
               suppressHydrationWarning
             >
-              <MenuIcon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
+              {sidebarOpen ? (
+                <CloseIcon className="w-5 h-5 text-black dark:text-white" />
+              ) : (
+                <MenuIcon className="w-5 h-5 text-black dark:text-white" />
+              )}
             </Button>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center shadow-lg">
-                <SparklesIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white dark:text-black" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-md bg-black dark:bg-white flex items-center justify-center">
+                <SparklesIcon className="w-4 h-4 text-white dark:text-black" />
               </div>
-              <h1 className="hidden sm:block text-xl sm:text-2xl font-bold select-none tracking-tight text-gray-900 dark:text-white">
+              <h1 className="text-lg font-semibold tracking-tight">
                 QUERY MATE AI
               </h1>
             </div>
           </div>
           <Button
-            className="ml-auto bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-1 sm:gap-2 font-semibold text-sm px-3 sm:px-4 h-9 sm:h-10"
+            className="ml-auto h-9 px-3 rounded-md bg-black dark:bg-white text-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-200"
             onClick={handleLogout}
             suppressHydrationWarning
           >
-            <LogoutIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">Logout</span>
+            <LogoutIcon className="w-4 h-4 mr-1" />
+            <span>Logout</span>
           </Button>
         </header>
+
         <div className="flex-1 h-0 flex flex-col">
           <ChatBox
             conversationId={convId}
