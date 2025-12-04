@@ -400,7 +400,8 @@ export async function POST(req: NextRequest) {
     if (modelConfig.provider === "perplexity") {
       const { text, sources } = await generateText({
         model: selectedModel,
-        messages: messagesToUse,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        messages: messagesToUse as any,
       });
 
       let finalContent = text;
@@ -451,7 +452,8 @@ export async function POST(req: NextRequest) {
         system: systemPrompt,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         messages: messagesToUse as any,
-        tools,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        tools: tools as any,
       });
 
       let full = "";
