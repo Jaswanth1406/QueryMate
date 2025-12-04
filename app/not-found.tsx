@@ -32,8 +32,8 @@ export default function NotFound() {
           </h2>
 
           <p className="text-gray-600 mb-8">
-            Sorry, the page you&apos;re looking for doesn&apos;t exist. It might have been
-            moved or deleted.
+            Sorry, the page you&apos;re looking for doesn&apos;t exist. It might
+            have been moved or deleted.
           </p>
 
           <div className="space-y-3">

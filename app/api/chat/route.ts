@@ -298,7 +298,9 @@ export async function POST(req: NextRequest) {
           });
         } else {
           // Other files - mention in text
-          const textContent = (currentMessageContent as ContentPart[])[0] as TextPart;
+          const textContent = (
+            currentMessageContent as ContentPart[]
+          )[0] as TextPart;
           textContent.text += `\n\n[File Attached: ${file.name} (${file.type})]`;
         }
       });
@@ -330,7 +332,9 @@ export async function POST(req: NextRequest) {
           });
         } else {
           // Other files - mention in text for Perplexity
-          const textContent = (currentMessageContent as ContentPart[])[0] as TextPart;
+          const textContent = (
+            currentMessageContent as ContentPart[]
+          )[0] as TextPart;
           textContent.text += `\n\n[File Attached: ${file.name} (${file.type})]`;
         }
       });
@@ -411,12 +415,14 @@ export async function POST(req: NextRequest) {
         finalContent += "\n\n---\n\n**Sources:**\n\n";
         const uniqueSources = new Map<string, string>();
 
-        sources.forEach((source: { url?: string; link?: string; title?: string }) => {
-          const url = source.url || source.link;
-          if (url && !uniqueSources.has(url)) {
-            uniqueSources.set(url, source.title || url);
-          }
-        });
+        sources.forEach(
+          (source: { url?: string; link?: string; title?: string }) => {
+            const url = source.url || source.link;
+            if (url && !uniqueSources.has(url)) {
+              uniqueSources.set(url, source.title || url);
+            }
+          },
+        );
 
         let sourceIndex = 1;
         uniqueSources.forEach((title: string, url: string) => {
