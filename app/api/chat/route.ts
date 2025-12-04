@@ -1,10 +1,11 @@
 // app/api/chat/route.ts
 import { db } from "@/lib/lib";
 import { messages, conversations, user, TOKEN_LIMITS } from "@/lib/schema";
-import { streamText } from "ai";
+import { streamText, generateText } from "ai";
 import { gemini } from "@/lib/ai-gemini";
 import { perplexity } from "@/lib/ai-perplexity";
 import { groq } from "@/lib/ai-groq";
+import { google } from "@ai-sdk/google";
 import { MODELS, getModel } from "@/lib/models";
 import { eq, and, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
@@ -87,10 +88,14 @@ export async function POST(req: NextRequest) {
       message,
       title,
       model = "gemini-2.5-flash", // Default model
+      useSearch = false,
+      files = [],
     } = body as {
       message?: string;
       title?: string;
       model?: string;
+      useSearch?: boolean;
+      files?: Array<{ name: string; type: string; data: string }>;
     };
 
     if (!message) {
@@ -228,63 +233,287 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const formatted = history.map((m) => ({
+    // Build history messages from database
+    const formatted: {
+      role: "user" | "assistant";
+      content: string | ContentPart[];
+    }[] = history.map((m) => ({
       role: m.role as "user" | "assistant",
       content: m.content || "",
     }));
 
+    // Content part types for multimodal messages
+    type TextPart = { type: "text"; text: string };
+    type ImagePart = {
+      type: "image";
+      source: { type: "base64"; mediaType: string; data: string };
+    };
+    type FilePart = {
+      type: "file";
+      data: Buffer;
+      mediaType: string;
+      filename: string;
+    };
+    type ContentPart = TextPart | ImagePart | FilePart;
+
+    // Build current message content - handle files based on provider capabilities
+    let currentMessageContent: string | ContentPart[] = message;
+    const hasImages =
+      files.length > 0 && files.some((f) => f.type.startsWith("image/"));
+    const hasPDFs =
+      files.length > 0 && files.some((f) => f.type === "application/pdf");
+    const hasOtherFiles =
+      files.length > 0 &&
+      files.some(
+        (f) => !f.type.startsWith("image/") && f.type !== "application/pdf",
+      );
+
+    if (modelConfig.provider === "google") {
+      // For Google, support images and PDFs via multimodal format
+      currentMessageContent = [
+        {
+          type: "text",
+          text: message,
+        },
+      ];
+
+      files.forEach((file) => {
+        if (file.type.startsWith("image/")) {
+          const base64Data = file.data.split(",")[1] || file.data; // Remove data:image/png;base64, prefix
+          (currentMessageContent as ContentPart[]).push({
+            type: "image",
+            source: {
+              type: "base64",
+              mediaType: file.type,
+              data: base64Data,
+            },
+          });
+        } else if (file.type === "application/pdf") {
+          const base64Data = file.data.split(",")[1] || file.data; // Remove data:application/pdf;base64, prefix
+          (currentMessageContent as ContentPart[]).push({
+            type: "file",
+            data: Buffer.from(base64Data, "base64"),
+            mediaType: "application/pdf",
+            filename: file.name,
+          });
+        } else {
+          // Other files - mention in text
+          const textContent = (currentMessageContent as ContentPart[])[0] as TextPart;
+          textContent.text += `\n\n[File Attached: ${file.name} (${file.type})]`;
+        }
+      });
+    } else if (modelConfig.provider === "perplexity") {
+      // For Perplexity, support images and PDFs via file format
+      currentMessageContent = [
+        {
+          type: "text",
+          text: message,
+        },
+      ];
+
+      files.forEach((file) => {
+        if (file.type.startsWith("image/")) {
+          const base64Data = file.data.split(",")[1] || file.data; // Remove data:image/png;base64, prefix
+          (currentMessageContent as ContentPart[]).push({
+            type: "file",
+            data: Buffer.from(base64Data, "base64"),
+            mediaType: file.type,
+            filename: file.name,
+          });
+        } else if (file.type === "application/pdf") {
+          const base64Data = file.data.split(",")[1] || file.data;
+          (currentMessageContent as ContentPart[]).push({
+            type: "file",
+            data: Buffer.from(base64Data, "base64"),
+            mediaType: "application/pdf",
+            filename: file.name,
+          });
+        } else {
+          // Other files - mention in text for Perplexity
+          const textContent = (currentMessageContent as ContentPart[])[0] as TextPart;
+          textContent.text += `\n\n[File Attached: ${file.name} (${file.type})]`;
+        }
+      });
+    } else {
+      // For other providers (Groq), no file support - mention files in text only
+      if (hasImages || hasPDFs || hasOtherFiles) {
+        let messageWithFiles = message;
+        files.forEach((file) => {
+          messageWithFiles += `\n\n[File Attached: ${file.name} (${file.type})]`;
+        });
+        currentMessageContent = messageWithFiles;
+      }
+    }
+
+    // Add current message to formatted array
+    if (
+      formatted.length > 0 &&
+      formatted[formatted.length - 1].role === "user"
+    ) {
+      formatted[formatted.length - 1].content = currentMessageContent;
+    } else {
+      formatted.push({
+        role: "user",
+        content: currentMessageContent,
+      });
+    }
+
     // Select AI model based on user choice
     const selectedModel = getAIModel(modelConfig);
 
-    // Call AI
-    const response = await streamText({
-      model: selectedModel,
-      messages: formatted,
-    });
-
-    let full = "";
+    // Store final variables for use in async operations
     const finalConversationId = conversationId;
     const finalModel = model;
     const finalProvider = modelConfig.provider;
     const supportsTokenUsage = modelConfig.supportsTokenUsage;
     const userId = session.user.id;
 
-    // Collect the full response and track tokens
-    (async () => {
-      for await (const chunk of response.textStream) {
-        full += chunk;
+    // Prepare tools for Google models with search
+    const tools =
+      modelConfig.provider === "google" && useSearch
+        ? {
+            google_search: google.tools.googleSearch({}),
+          }
+        : undefined;
+
+    // Build messages for the AI provider
+    // Ensure content format matches provider capabilities
+    const messagesToUse = formatted.map((msg) => {
+      // For Groq and other non-file-supporting providers, convert array to string
+      if (
+        modelConfig.provider !== "google" &&
+        modelConfig.provider !== "perplexity" &&
+        Array.isArray(msg.content)
+      ) {
+        const textParts = (msg.content as ContentPart[])
+          .filter((item) => item.type === "text")
+          .map((item) => (item as TextPart).text);
+        return {
+          ...msg,
+          content: textParts.join("\n"),
+        };
+      }
+      return msg;
+    });
+
+    // For Perplexity, use generateText to get sources
+    if (modelConfig.provider === "perplexity") {
+      const { text, sources } = await generateText({
+        model: selectedModel,
+        messages: messagesToUse,
+      });
+
+      let finalContent = text;
+
+      // Append sources if available
+      if (sources && sources.length > 0) {
+        finalContent += "\n\n---\n\n**Sources:**\n\n";
+        const uniqueSources = new Map<string, string>();
+
+        sources.forEach((source: { url?: string; link?: string; title?: string }) => {
+          const url = source.url || source.link;
+          if (url && !uniqueSources.has(url)) {
+            uniqueSources.set(url, source.title || url);
+          }
+        });
+
+        let sourceIndex = 1;
+        uniqueSources.forEach((title: string, url: string) => {
+          finalContent += `[${sourceIndex}] ${title}\n`;
+          finalContent += `    ${url}\n\n`;
+          sourceIndex++;
+        });
       }
 
-      // Get token usage from the response (if supported)
-      const usage = await response.usage;
-      const totalTokens = supportsTokenUsage ? usage?.totalTokens || 0 : 0;
-
-      // Save assistant message with token info
+      // Save assistant message with sources
       await db.insert(messages).values({
         conversationId: finalConversationId,
         role: "assistant",
-        content: full,
+        content: finalContent,
         model: finalModel,
-        tokensUsed: totalTokens,
+        tokensUsed: null,
       });
 
-      // Update user's token usage (Google/Groq models that support token tracking)
-      if (finalProvider === "google" && totalTokens > 0) {
-        await db
-          .update(user)
-          .set({
-            tokensUsedGemini: sql`${user.tokensUsedGemini} + ${totalTokens}`,
-            requestsUsedGemini: sql`${user.requestsUsedGemini} + 1`,
-          })
-          .where(eq(user.id, userId));
-      }
-    })();
+      // Return as text stream response like other models
+      return new Response(finalContent, {
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      });
+    }
 
-    return response.toTextStreamResponse();
+    // Call AI
+    const systemPrompt = tools
+      ? "You have access to web search. Use the google_search tool to find current information when the user asks about recent events, news, weather, or anything that requires up-to-date information. Always search for the most relevant and current information."
+      : undefined;
+
+    try {
+      const response = await streamText({
+        model: selectedModel,
+        system: systemPrompt,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        messages: messagesToUse as any,
+        tools,
+      });
+
+      let full = "";
+
+      // Collect the full response and track tokens
+      (async () => {
+        try {
+          for await (const chunk of response.textStream) {
+            full += chunk;
+          }
+
+          // Get token usage from the response (if supported)
+          const usage = await response.usage;
+          const totalTokens = supportsTokenUsage ? usage?.totalTokens || 0 : 0;
+
+          // Save assistant message with token info
+          await db.insert(messages).values({
+            conversationId: finalConversationId,
+            role: "assistant",
+            content: full,
+            model: finalModel,
+            tokensUsed: totalTokens,
+          });
+
+          // Update user's token usage (Google models that support token tracking)
+          if (finalProvider === "google" && totalTokens > 0) {
+            await db
+              .update(user)
+              .set({
+                tokensUsedGemini: sql`${user.tokensUsedGemini} + ${totalTokens}`,
+                requestsUsedGemini: sql`${user.requestsUsedGemini} + 1`,
+              })
+              .where(eq(user.id, userId));
+          }
+        } catch (streamError) {
+          console.error("Error processing stream:", streamError);
+          // Still save what we got
+          if (full) {
+            await db.insert(messages).values({
+              conversationId: finalConversationId,
+              role: "assistant",
+              content: full || "Error generating response. Please try again.",
+              model: finalModel,
+              tokensUsed: null,
+            });
+          }
+        }
+      })();
+
+      return response.toTextStreamResponse();
+    } catch (aiError) {
+      console.error("AI Error Details:", aiError);
+      const errorMessage =
+        aiError instanceof Error ? aiError.message : String(aiError);
+      throw new Error(`AI Generation Error: ${errorMessage}`);
+    }
   } catch (error) {
-    console.error("Error in chat:", error);
+    console.error("Error in chat route:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Full error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: `Chat error: ${errorMessage}` },
       { status: 500 },
     );
   }

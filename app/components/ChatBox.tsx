@@ -28,7 +28,26 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  sources?: string[];
+  imageUrls?: string[];
+};
+
+// Helper functions for model capabilities
+const supportsFiles = (modelId: string): boolean => {
+  // Files support for Google (Gemini) and Perplexity models only
+  // Groq models do not support file attachments
+  const model = MODELS[modelId as keyof typeof MODELS];
+  if (!model) return false;
+  return model.provider === "google" || model.provider === "perplexity";
+};
+
+const supportsSearch = (modelId: string): boolean => {
+  // Search supported for Google models only
+  return modelId.startsWith("gemini-");
+};
 
 const STARTER_SUGGESTIONS = [
   "Explain quantum computing",
@@ -72,6 +91,9 @@ export default function ChatBox({
     useState<string>("gemini-2.5-flash");
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [useSearch, setUseSearch] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const baseTextRef = useRef<string>(""); // Store text before speech started
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -182,11 +204,37 @@ export default function ChatBox({
     setInput("");
     setLoading(true);
 
-    const body: { message: string; model: string; conversationId?: string } = {
+    // Convert attached files to base64
+    const fileData: Array<{ name: string; type: string; data: string }> = [];
+    for (const file of attachedFiles) {
+      const data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      fileData.push({
+        name: file.name,
+        type: file.type,
+        data,
+      });
+    }
+
+    const body: {
+      message: string;
+      model: string;
+      conversationId?: string;
+      useSearch?: boolean;
+      files?: Array<{ name: string; type: string; data: string }>;
+    } = {
       message: trimmed,
       model: selectedModel,
+      useSearch,
     };
+    if (fileData.length > 0) body.files = fileData;
     if (conversationId) body.conversationId = conversationId;
+
+    setAttachedFiles([]);
 
     try {
       const res = await fetch("/api/chat", {
@@ -252,7 +300,23 @@ export default function ChatBox({
     setConversationId(null);
     setMessages([]);
     setInput("");
+    setAttachedFiles([]);
+    setUseSearch(false);
   }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.currentTarget.files;
+    if (files) {
+      setAttachedFiles((prev) => [...prev, ...Array.from(files)]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const showCenterPrompt = !hasHistory && !loading && messages.length === 0;
 
@@ -316,13 +380,42 @@ export default function ChatBox({
                     )}
                   >
                     {msg.role === "user" ? (
-                      <p className="text-sm text-foreground">{msg.content}</p>
+                      <div>
+                        <p className="text-sm text-foreground">{msg.content}</p>
+                        {msg.imageUrls && msg.imageUrls.length > 0 && (
+                          <div className="mt-2 flex gap-2 flex-wrap">
+                            {msg.imageUrls.map((url, idx) => (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                key={idx}
+                                src={url}
+                                alt="Attached"
+                                className="max-w-[200px] max-h-[200px] rounded"
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     ) : (
-                      <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none">
-                        <MemoizedMarkdown
-                          content={msg.content}
-                          id={`msg-${i}`}
-                        />
+                      <div>
+                        <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none">
+                          <MemoizedMarkdown
+                            content={msg.content}
+                            id={`msg-${i}`}
+                          />
+                        </div>
+                        {msg.sources && msg.sources.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
+                            <p className="font-semibold mb-2">Sources:</p>
+                            <ul className="space-y-1">
+                              {msg.sources.map((source, idx) => (
+                                <li key={idx} className="truncate">
+                                  • {source}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -337,6 +430,67 @@ export default function ChatBox({
       {/* Input Area - ChatGPT Style */}
       <div className="border-t border-border bg-background px-4 py-4">
         <div className="max-w-3xl mx-auto">
+          {/* Attached Files Display */}
+          {attachedFiles.length > 0 && (
+            <div className="mb-3">
+              <div className="flex flex-wrap gap-2 mb-2">
+                {attachedFiles.map((file, idx) => {
+                  const model = MODELS[selectedModel as keyof typeof MODELS];
+                  const isImage = file.type.startsWith("image/");
+                  const isPDF = file.type === "application/pdf";
+                  const isSupported =
+                    (isImage || isPDF) &&
+                    (model?.provider === "google" ||
+                      model?.provider === "perplexity");
+
+                  return (
+                    <div
+                      key={idx}
+                      className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ${
+                        isSupported
+                          ? "bg-secondary"
+                          : "bg-yellow-500/20 border border-yellow-500/50"
+                      }`}
+                    >
+                      <span className="truncate max-w-[150px]">
+                        {file.name}
+                      </span>
+                      {!isSupported && (
+                        <span
+                          className="text-yellow-700 dark:text-yellow-300"
+                          title="Not fully supported"
+                        >
+                          ⚠
+                        </span>
+                      )}
+                      <button
+                        onClick={() => removeFile(idx)}
+                        className="text-muted-foreground hover:text-foreground"
+                        title="Remove file"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              {attachedFiles.some((f) => !f.type.startsWith("image/")) && (
+                <p className="text-xs text-muted-foreground mb-2">
+                  💡 Tip: Both Google and Perplexity models support images and
+                  PDFs. Groq models don&apos;t support file attachments.
+                </p>
+              )}
+            </div>
+          )}
+          {/* Hidden File Input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={handleFileSelect}
+            className="hidden"
+            accept="image/jpeg,image/png,image/gif,image/webp,.pdf,.doc,.docx,.txt"
+          />
           {/* Input Box */}
           <div className="rounded-3xl border border-border bg-secondary/30 dark:bg-zinc-800/50 overflow-hidden">
             {/* Textarea */}
@@ -372,6 +526,13 @@ export default function ChatBox({
                     <DropdownMenuItem onClick={handleNewChat}>
                       <GlobeIcon className="mr-2 h-4 w-4" /> New Chat
                     </DropdownMenuItem>
+                    {supportsFiles(selectedModel) && (
+                      <DropdownMenuItem
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <PlusIcon className="mr-2 h-4 w-4" /> Add File
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -403,15 +564,22 @@ export default function ChatBox({
                 </Button>
 
                 {/* Search button with label */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 rounded-full gap-1.5 px-3"
-                  suppressHydrationWarning
-                >
-                  <GlobeIcon className="h-4 w-4" />
-                  <span className="text-xs">Search</span>
-                </Button>
+                {supportsSearch(selectedModel) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "h-8 rounded-full gap-1.5 px-3 transition-colors",
+                      useSearch && "bg-blue-500/20 text-blue-500",
+                    )}
+                    onClick={() => setUseSearch(!useSearch)}
+                    title={useSearch ? "Disable search" : "Enable search"}
+                    suppressHydrationWarning
+                  >
+                    <GlobeIcon className="h-4 w-4" />
+                    <span className="text-xs">Search</span>
+                  </Button>
+                )}
 
                 {/* Model Selector */}
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
