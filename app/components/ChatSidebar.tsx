@@ -275,8 +275,10 @@ export default function ChatSidebar({
 
       {/* Sidebar */}
       <aside
-        className={`fixed z-30 left-0 top-[57px] h-[calc(100%-57px)] w-72 md:w-80 transition-transform duration-300 ease-in-out bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col ${
-          open ? "translate-x-0" : "-translate-x-72 md:-translate-x-80"
+        className={`fixed z-30 left-0 top-[49px] sm:top-[57px] h-[calc(100%-49px)] sm:h-[calc(100%-57px)] w-[85vw] xs:w-72 md:w-80 transition-transform duration-300 ease-in-out bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col ${
+          open
+            ? "translate-x-0"
+            : "-translate-x-[85vw] xs:-translate-x-72 md:-translate-x-80"
         }`}
       >
         {/* User info */}

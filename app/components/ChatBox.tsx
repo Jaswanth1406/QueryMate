@@ -388,16 +388,16 @@ export default function ChatBox({
     <div className="flex flex-col h-full bg-background">
       {/* Conversation Area */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto w-full p-4">
+        <div className="max-w-3xl mx-auto w-full px-3 sm:px-4 py-3 sm:py-4">
           {showCenterPrompt ? (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-              <h1 className="text-2xl md:text-3xl font-semibold mb-3 text-foreground">
+            <div className="flex flex-col items-center justify-center min-h-[50vh] sm:min-h-[60vh] text-center px-2">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold mb-2 sm:mb-3 text-foreground">
                 What would you like to know?
               </h1>
-              <p className="text-sm text-muted-foreground mb-8">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-8">
                 Choose a model and ask anything to get started.
               </p>
-              <div className="flex flex-wrap justify-center gap-2">
+              <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
                 {STARTER_SUGGESTIONS.map((suggestion) => (
                   <Button
                     key={suggestion}
@@ -427,9 +427,9 @@ export default function ChatBox({
                 >
                   <div
                     className={cn(
-                      "max-w-[85%]",
+                      "max-w-[95%] sm:max-w-[85%]",
                       msg.role === "user"
-                        ? "bg-secondary rounded-2xl px-4 py-3"
+                        ? "bg-secondary rounded-2xl px-3 sm:px-4 py-2 sm:py-3"
                         : "",
                     )}
                   >
@@ -482,7 +482,7 @@ export default function ChatBox({
       </div>
 
       {/* Input Area - ChatGPT Style */}
-      <div className="border-t border-border bg-background px-4 py-4">
+      <div className="border-t border-border bg-background px-2 sm:px-4 py-2 sm:py-4">
         <div className="max-w-3xl mx-auto">
           {/* Attached Files Display */}
           {attachedFiles.length > 0 && (
@@ -556,24 +556,24 @@ export default function ChatBox({
               placeholder="What would you like to know?"
               disabled={isLoading}
               rows={1}
-              className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 min-h-[60px] max-h-[200px]"
+              className="w-full resize-none bg-transparent px-3 sm:px-4 pt-3 sm:pt-4 pb-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 min-h-[50px] sm:min-h-[60px] max-h-[150px] sm:max-h-[200px]"
               style={{ fieldSizing: "content" } as React.CSSProperties}
             />
 
             {/* Footer with tools */}
-            <div className="flex items-center justify-between px-3 pb-3">
+            <div className="flex items-center justify-between px-2 sm:px-3 pb-2 sm:pb-3 gap-1">
               {/* Left side tools */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap">
                 {/* Plus button */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 rounded-full"
+                      className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
                       suppressHydrationWarning
                     >
-                      <PlusIcon className="h-4 w-4" />
+                      <PlusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
@@ -595,7 +595,7 @@ export default function ChatBox({
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "h-8 w-8 rounded-full transition-colors",
+                    "h-7 w-7 sm:h-8 sm:w-8 rounded-full transition-colors",
                     isListening &&
                       "bg-red-500/20 text-red-500 hover:bg-red-500/30",
                   )}
@@ -611,9 +611,9 @@ export default function ChatBox({
                   suppressHydrationWarning
                 >
                   {isListening ? (
-                    <MicOffIcon className="h-4 w-4" />
+                    <MicOffIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   ) : (
-                    <MicIcon className="h-4 w-4" />
+                    <MicIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   )}
                 </Button>
 
@@ -623,27 +623,29 @@ export default function ChatBox({
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      "h-8 rounded-full gap-1.5 px-3 transition-colors",
+                      "h-7 sm:h-8 rounded-full gap-1 sm:gap-1.5 px-2 sm:px-3 transition-colors",
                       useSearch && "bg-blue-500/20 text-blue-500",
                     )}
                     onClick={() => setUseSearch(!useSearch)}
                     title={useSearch ? "Disable search" : "Enable search"}
                     suppressHydrationWarning
                   >
-                    <GlobeIcon className="h-4 w-4" />
-                    <span className="text-xs">Search</span>
+                    <GlobeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="text-[10px] sm:text-xs hidden xs:inline">
+                      Search
+                    </span>
                   </Button>
                 )}
 
                 {/* Model Selector */}
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
                   <SelectTrigger
-                    className="h-8 w-auto border-none bg-transparent shadow-none hover:bg-accent rounded-full px-3 gap-1.5"
+                    className="h-7 sm:h-8 w-auto border-none bg-transparent shadow-none hover:bg-accent rounded-full px-2 sm:px-3 gap-1"
                     suppressHydrationWarning
                   >
-                    <GlobeIcon className="h-4 w-4" />
+                    <GlobeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     <SelectValue>
-                      <span className="text-xs">
+                      <span className="text-[10px] sm:text-xs max-w-[80px] sm:max-w-none truncate">
                         {MODELS[selectedModel]?.name}
                       </span>
                     </SelectValue>
@@ -676,31 +678,30 @@ export default function ChatBox({
                   type="button"
                   size="icon"
                   variant="destructive"
-                  className="h-8 w-8 rounded-lg"
+                  className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex-shrink-0"
                   onClick={handleStop}
                   title="Stop generation"
                   suppressHydrationWarning
                 >
-                  <StopCircleIcon className="h-4 w-4" />
+                  <StopCircleIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
               ) : (
                 <Button
                   type="submit"
                   size="icon"
-                  className="h-8 w-8 rounded-lg bg-primary hover:bg-primary/90"
+                  className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-primary hover:bg-primary/90 flex-shrink-0"
                   disabled={!input.trim()}
                   onClick={() => sendMessage(input)}
                   suppressHydrationWarning
                 >
-                  <CornerDownLeftIcon className="h-4 w-4" />
+                  <CornerDownLeftIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
               )}
             </div>
           </div>
 
-          <p className="text-[11px] text-muted-foreground text-center mt-3">
-            Query Mate AI can make mistakes. Consider checking important
-            information.
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground text-center mt-2 sm:mt-3 px-2">
+            Query Mate AI can make mistakes. Consider checking important info.
           </p>
         </div>
       </div>

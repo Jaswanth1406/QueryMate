@@ -90,12 +90,12 @@ export default function ChatPage() {
         }}
       />
       <div className="flex-1 flex flex-col min-h-screen">
-        <header className="flex w-full items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 relative z-40">
-          <div className="flex items-center gap-3">
+        <header className="flex w-full items-center justify-between px-2 sm:px-4 py-2 sm:py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 relative z-40">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
               onClick={() => setSidebarOpen((o) => !o)}
               aria-label={sidebarOpen ? "Close Sidebar" : "Open Sidebar"}
               suppressHydrationWarning
@@ -107,21 +107,22 @@ export default function ChatPage() {
               )}
             </Button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-md bg-black dark:bg-white flex items-center justify-center">
-                <SparklesIcon className="w-4 h-4 text-white dark:text-black" />
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-black dark:bg-white flex items-center justify-center">
+                <SparklesIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white dark:text-black" />
               </div>
-              <h1 className="text-lg font-semibold tracking-tight">
-                QUERY MATE AI
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight">
+                <span className="hidden xs:inline">QUERY MATE AI</span>
+                <span className="xs:hidden">QUERY MATE</span>
               </h1>
             </div>
           </div>
           <Button
-            className="ml-auto h-9 px-3 rounded-md bg-black dark:bg-white text-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-200"
+            className="ml-auto h-8 sm:h-9 px-2 sm:px-3 rounded-md bg-black dark:bg-white text-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-200"
             onClick={handleLogout}
             suppressHydrationWarning
           >
-            <LogoutIcon className="w-4 h-4 mr-1" />
-            <span>Logout</span>
+            <LogoutIcon className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Logout</span>
           </Button>
         </header>
 
