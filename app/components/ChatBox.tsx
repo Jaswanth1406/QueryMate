@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useCompletion } from "@ai-sdk/react";
 import {
   GlobeIcon,
   PlusIcon,
@@ -8,6 +9,7 @@ import {
   MicOffIcon,
   CornerDownLeftIcon,
   Loader2Icon,
+  StopCircleIcon,
 } from "lucide-react";
 import { MemoizedMarkdown } from "./MemoizedMarkdown";
 import { mutateConversations, mutateUsage } from "./ChatSidebar";
@@ -85,7 +87,6 @@ export default function ChatBox({
   chatTitle?: string | null;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(false);
   const [input, setInput] = useState("");
   const [selectedModel, setSelectedModel] =
     useState<string>("gemini-2.5-flash");
@@ -93,10 +94,103 @@ export default function ChatBox({
   const [speechSupported, setSpeechSupported] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [useSearch, setUseSearch] = useState(false);
+  const [currentConvId, setCurrentConvId] = useState<string | null>(
+    conversationId,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const baseTextRef = useRef<string>(""); // Store text before speech started
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const completionRef = useRef<string>("");
+
+  // Use AI SDK's useCompletion hook for streaming with stop functionality
+  const {
+    completion,
+    complete,
+    isLoading,
+    stop: stopCompletion,
+    setCompletion,
+  } = useCompletion({
+    api: "/api/chat",
+    streamProtocol: "text",
+    onFinish: () => {
+      mutateUsage();
+      mutateConversations();
+    },
+    onError: (error) => {
+      console.error("Completion error:", error);
+      // Keep partial completion if any
+      if (completionRef.current) {
+        setMessages((prev) => {
+          const updated = [...prev];
+          if (
+            updated.length &&
+            updated[updated.length - 1].role === "assistant"
+          ) {
+            updated[updated.length - 1].content =
+              completionRef.current + "\n\n*[Error: Connection interrupted]*";
+          }
+          return updated;
+        });
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "Unable to connect. Please try again.",
+          },
+        ]);
+      }
+    },
+  });
+
+  // Custom stop function that preserves the partial message
+  const handleStop = () => {
+    // Save the current completion before stopping
+    const partialMessage = completionRef.current;
+    stopCompletion();
+
+    // Make sure the partial message stays in the chat
+    if (partialMessage) {
+      setMessages((prev) => {
+        const updated = [...prev];
+        if (
+          updated.length &&
+          updated[updated.length - 1].role === "assistant"
+        ) {
+          updated[updated.length - 1].content = partialMessage;
+        } else {
+          updated.push({ role: "assistant", content: partialMessage });
+        }
+        return updated;
+      });
+    }
+  };
+
+  // Sync completion to messages and keep ref updated
+  useEffect(() => {
+    if (completion) {
+      completionRef.current = completion;
+      setMessages((prev) => {
+        const updated = [...prev];
+        if (
+          updated.length &&
+          updated[updated.length - 1].role === "assistant"
+        ) {
+          updated[updated.length - 1].content = completion;
+        } else {
+          updated.push({ role: "assistant", content: completion });
+        }
+        return updated;
+      });
+    }
+  }, [completion]);
+
+  // Sync conversationId prop to local state
+  useEffect(() => {
+    setCurrentConvId(conversationId);
+  }, [conversationId]);
 
   const hasHistory = conversationId !== null && messages.length > 0;
 
@@ -198,11 +292,12 @@ export default function ChatBox({
 
   async function sendMessage(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || loading) return;
+    if (!trimmed || isLoading) return;
 
     setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
     setInput("");
-    setLoading(true);
+    setCompletion(""); // Reset completion for new message
+    completionRef.current = ""; // Reset ref for new message
 
     // Convert attached files to base64
     const fileData: Array<{ name: string; type: string; data: string }> = [];
@@ -220,88 +315,47 @@ export default function ChatBox({
       });
     }
 
-    const body: {
-      message: string;
-      model: string;
-      conversationId?: string;
-      useSearch?: boolean;
-      files?: Array<{ name: string; type: string; data: string }>;
-    } = {
-      message: trimmed,
+    setAttachedFiles([]);
+
+    // Build the body for the completion request
+    const bodyData: Record<string, unknown> = {
       model: selectedModel,
       useSearch,
     };
-    if (fileData.length > 0) body.files = fileData;
-    if (conversationId) body.conversationId = conversationId;
+    if (fileData.length > 0) bodyData.files = fileData;
+    if (currentConvId) bodyData.conversationId = currentConvId;
 
-    setAttachedFiles([]);
+    // Use the complete function from useCompletion
+    await complete(trimmed, {
+      body: bodyData,
+    });
 
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+    // After completion, fetch new conversation if needed
+    if (!currentConvId) {
+      mutateConversations();
+      const convRes = await fetch("/api/conversations", {
         credentials: "include",
-        body: JSON.stringify(body),
       });
-
-      if (!conversationId) {
-        mutateConversations();
-        const convRes = await fetch("/api/conversations", {
-          credentials: "include",
-        });
-        if (convRes.ok) {
-          const convData = await convRes.json();
-          const list = convData.conversations || [];
-          if (list.length) {
-            const newest = list[list.length - 1];
-            setConversationId(newest.id);
-          }
+      if (convRes.ok) {
+        const convData = await convRes.json();
+        const list = convData.conversations || [];
+        if (list.length) {
+          const newest = list[list.length - 1];
+          setConversationId(newest.id);
+          setCurrentConvId(newest.id);
         }
       }
-
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      let full = "";
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
-          full += chunk;
-          setMessages((prev) => {
-            const updated = [...prev];
-            if (
-              updated.length &&
-              updated[updated.length - 1].role === "assistant"
-            ) {
-              updated[updated.length - 1].content = full;
-            } else {
-              updated.push({ role: "assistant", content: full });
-            }
-            return updated;
-          });
-        }
-        mutateUsage();
-        mutateConversations();
-      }
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Unable to connect. Please try again.",
-        },
-      ]);
     }
-    setLoading(false);
   }
 
   function handleNewChat() {
     setConversationId(null);
+    setCurrentConvId(null);
     setMessages([]);
     setInput("");
     setAttachedFiles([]);
     setUseSearch(false);
+    setCompletion("");
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -318,13 +372,13 @@ export default function ChatBox({
     setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const showCenterPrompt = !hasHistory && !loading && messages.length === 0;
+  const showCenterPrompt = !hasHistory && !isLoading && messages.length === 0;
 
   // Handle Enter key to submit
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (input.trim() && !loading) {
+      if (input.trim() && !isLoading) {
         sendMessage(input);
       }
     }
@@ -421,7 +475,7 @@ export default function ChatBox({
                   </div>
                 </div>
               ))}
-              {loading && <TypingIndicator />}
+              {isLoading && <TypingIndicator />}
             </div>
           )}
         </div>
@@ -500,7 +554,7 @@ export default function ChatBox({
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="What would you like to know?"
-              disabled={loading}
+              disabled={isLoading}
               rows={1}
               className="w-full resize-none bg-transparent px-4 pt-4 pb-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 min-h-[60px] max-h-[200px]"
               style={{ fieldSizing: "content" } as React.CSSProperties}
@@ -546,7 +600,7 @@ export default function ChatBox({
                       "bg-red-500/20 text-red-500 hover:bg-red-500/30",
                   )}
                   onClick={toggleListening}
-                  disabled={!speechSupported || loading}
+                  disabled={!speechSupported || isLoading}
                   title={
                     speechSupported
                       ? isListening
@@ -616,21 +670,31 @@ export default function ChatBox({
                 </Select>
               </div>
 
-              {/* Right side - Submit button */}
-              <Button
-                type="submit"
-                size="icon"
-                className="h-8 w-8 rounded-lg bg-primary hover:bg-primary/90"
-                disabled={loading || !input.trim()}
-                onClick={() => sendMessage(input)}
-                suppressHydrationWarning
-              >
-                {loading ? (
-                  <Loader2Icon className="h-4 w-4 animate-spin" />
-                ) : (
+              {/* Right side - Submit/Stop button */}
+              {isLoading ? (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="destructive"
+                  className="h-8 w-8 rounded-lg"
+                  onClick={handleStop}
+                  title="Stop generation"
+                  suppressHydrationWarning
+                >
+                  <StopCircleIcon className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg bg-primary hover:bg-primary/90"
+                  disabled={!input.trim()}
+                  onClick={() => sendMessage(input)}
+                  suppressHydrationWarning
+                >
                   <CornerDownLeftIcon className="h-4 w-4" />
-                )}
-              </Button>
+                </Button>
+              )}
             </div>
           </div>
 

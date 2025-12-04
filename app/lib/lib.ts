@@ -12,9 +12,12 @@ export const pool =
   globalForPool.pool ??
   new Pool({
     connectionString: process.env.SUPABASE_DB_URL,
-    max: 20, // Maximum number of clients in the pool
-    idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-    connectionTimeoutMillis: 10000, // Return error after 10 seconds if connection could not be established
+    max: 3, // Reduced to avoid MaxClientsInSessionMode error on Supabase free tier
+    idleTimeoutMillis: 10000, // Close idle clients after 10 seconds
+    connectionTimeoutMillis: 30000, // 30 second timeout
+    ssl: {
+      rejectUnauthorized: false,
+    },
   });
 
 if (process.env.NODE_ENV !== "production") globalForPool.pool = pool;

@@ -86,19 +86,24 @@ export async function POST(req: NextRequest) {
     let { conversationId } = body as { conversationId?: string };
     const {
       message,
+      prompt, // useCompletion sends 'prompt' instead of 'message'
       title,
       model = "gemini-2.5-flash", // Default model
       useSearch = false,
       files = [],
     } = body as {
       message?: string;
+      prompt?: string;
       title?: string;
       model?: string;
       useSearch?: boolean;
       files?: Array<{ name: string; type: string; data: string }>;
     };
 
-    if (!message) {
+    // Support both 'message' and 'prompt' (useCompletion uses 'prompt')
+    const userMessage = message || prompt;
+
+    if (!userMessage) {
       return NextResponse.json(
         { error: "message is required" },
         { status: 400 },
@@ -161,7 +166,7 @@ export async function POST(req: NextRequest) {
     await db.insert(messages).values({
       conversationId,
       role: "user",
-      content: message,
+      content: userMessage,
       model: null,
       tokensUsed: null,
     });
@@ -202,7 +207,7 @@ export async function POST(req: NextRequest) {
           messages: [
             {
               role: "user",
-              content: `Generate a very short 3-word title for this message. Output ONLY the title, nothing else: "${message}"`,
+              content: `Generate a very short 3-word title for this message. Output ONLY the title, nothing else: "${userMessage}"`,
             },
           ],
         });
@@ -257,7 +262,7 @@ export async function POST(req: NextRequest) {
     type ContentPart = TextPart | ImagePart | FilePart;
 
     // Build current message content - handle files based on provider capabilities
-    let currentMessageContent: string | ContentPart[] = message;
+    let currentMessageContent: string | ContentPart[] = userMessage;
     const hasImages =
       files.length > 0 && files.some((f) => f.type.startsWith("image/"));
     const hasPDFs =
@@ -273,7 +278,7 @@ export async function POST(req: NextRequest) {
       currentMessageContent = [
         {
           type: "text",
-          text: message,
+          text: userMessage,
         },
       ];
 
@@ -309,7 +314,7 @@ export async function POST(req: NextRequest) {
       currentMessageContent = [
         {
           type: "text",
-          text: message,
+          text: userMessage,
         },
       ];
 
@@ -341,7 +346,7 @@ export async function POST(req: NextRequest) {
     } else {
       // For other providers (Groq), no file support - mention files in text only
       if (hasImages || hasPDFs || hasOtherFiles) {
-        let messageWithFiles = message;
+        let messageWithFiles = userMessage;
         files.forEach((file) => {
           messageWithFiles += `\n\n[File Attached: ${file.name} (${file.type})]`;
         });
