@@ -5,6 +5,7 @@ import { streamText, generateText } from "ai";
 import { gemini } from "@/lib/ai-gemini";
 import { perplexity } from "@/lib/ai-perplexity";
 import { groq } from "@/lib/ai-groq";
+import { google } from "@ai-sdk/google";
 import { getModel } from "@/lib/models";
 import { eq, and, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
       title,
       model = "gemini-2.5-flash",
       files = [],
+      useSearch = false,
     } = body;
 
     const userMessage = message || prompt;
@@ -319,9 +321,23 @@ export async function POST(req: NextRequest) {
       return gemini(modelConfig.modelId);
     })();
 
+    const systemPrompt = useSearch
+      ? "You have access to web search. Use the google_search tool to find current information when the user asks about recent events, news, weather, or anything that requires up-to-date information. Always search for the most relevant and current information."
+      : undefined;
+
+    const tools =
+      provider === "google" && useSearch
+        ? {
+            google_search: google.tools.googleSearch({}),
+          }
+        : undefined;
+
     const response = await streamText({
       model: llm,
+      system: systemPrompt,
       messages: formatted,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tools: tools as any,
     });
 
     let full = "";
