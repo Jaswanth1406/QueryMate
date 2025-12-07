@@ -8,7 +8,6 @@ import {
   MicIcon,
   MicOffIcon,
   CornerDownLeftIcon,
-  Loader2Icon,
   StopCircleIcon,
 } from "lucide-react";
 import { MemoizedMarkdown } from "./MemoizedMarkdown";
@@ -200,7 +199,6 @@ export default function ChatBox({
       const SpeechRecognition =
         window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognition) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time browser capability check
         setSpeechSupported(true);
         const recognition = new SpeechRecognition();
         recognition.continuous = false; // Changed to false - stops after each phrase
@@ -279,7 +277,6 @@ export default function ChatBox({
     }
 
     if (!conversationId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate initialization
       setMessages([]);
       return;
     }
