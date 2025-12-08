@@ -28,6 +28,11 @@ export const MODELS: Record<string, ModelConfig> = {
     provider: "google",
     modelId: "gemini-2.5-flash",
     description: "Fast and efficient",
+    limits: {
+      rpm: 5,
+      rpd: 20,
+      tpm: 250000,
+    },
     supportsTokenUsage: true,
   },
   "gemini-2.5-flash-lite": {
@@ -36,17 +41,13 @@ export const MODELS: Record<string, ModelConfig> = {
     provider: "google",
     modelId: "gemini-2.5-flash-lite",
     description: "Ultra fast, cost-efficient",
+    limits: {
+      rpm: 10,
+      rpd: 20,
+      tpm: 250000,
+    },
     supportsTokenUsage: true,
   },
-  "gemini-2.0-flash": {
-    id: "gemini-2.0-flash",
-    name: "Gemini 2.0 Flash",
-    provider: "google",
-    modelId: "gemini-2.0-flash",
-    description: "Stable workhorse model",
-    supportsTokenUsage: true,
-  },
-
   // Perplexity Models
   sonar: {
     id: "sonar",
@@ -160,7 +161,7 @@ export const MODEL_GROUPS: Record<
   google: {
     name: "Google",
     icon: "🧠",
-    models: ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"],
+    models: ["gemini-2.5-flash", "gemini-2.5-flash-lite"],
   },
   perplexity: {
     name: "Perplexity",

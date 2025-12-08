@@ -10,6 +10,8 @@ import { getModel } from "@/lib/models";
 import { eq, and, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth-middleware";
+import CodeInterpreter from "@e2b/code-interpreter";
+import { z } from "zod";
 
 async function checkAndResetDailyTokens(userId: string) {
   const [userData] = await db.select().from(user).where(eq(user.id, userId));
@@ -64,6 +66,120 @@ function checkLimits(userData: UserData, provider: string) {
   }
   return { exceeded: false, message: "" };
 }
+
+// 🔧 E2B CODE EXECUTION TOOL (Google only)
+async function executeCodeInSandbox(args: {
+  code: string;
+  language?: "python" | "javascript";
+}) {
+  const { code, language } = args;
+  console.log("🔧 executeCode called with:", { code, language });
+
+  const lang = language || "python";
+
+  console.log("🔧 Using language:", lang, "Code type:", typeof code);
+
+  // Validate code parameter
+  if (!code || typeof code !== "string") {
+    console.error("❌ Invalid code parameter:", code);
+    return {
+      output: null,
+      error: `Invalid tool call. The 'code' parameter is required and must be a string.`,
+      logs: [],
+      results: [],
+    };
+  }
+
+  console.log("✅ Code validation passed, creating sandbox...");
+
+  const sandbox = await CodeInterpreter.create({
+    apiKey: process.env.E2B_KEY,
+  });
+  try {
+    // Strip backticks and code block markers if present
+    const cleanCode = code
+      .replace(/^```(?:python|javascript|js)?\n?/gm, "")
+      .replace(/```$/gm, "")
+      .trim();
+
+    console.log(
+      "✨ Cleaned code:",
+      cleanCode.substring(0, 100) + (cleanCode.length > 100 ? "..." : ""),
+    );
+
+    // Validate cleaned code
+    if (!cleanCode) {
+      return {
+        output: null,
+        error: "Code is empty after cleaning",
+        logs: [],
+        results: [],
+      };
+    }
+
+    console.log("⚡ Running code in E2B sandbox...");
+
+    const execution = await sandbox.runCode(cleanCode, {
+      language: lang === "javascript" ? "js" : "python",
+    });
+
+    console.log("✅ Execution completed:", {
+      hasText: !!execution.text,
+      hasError: !!execution.error,
+      hasLogs: !!execution.logs,
+      logsStdout: execution.logs?.stdout,
+      logsStderr: execution.logs?.stderr,
+      resultsCount: execution.results?.length || 0,
+    });
+
+    // Combine stdout and stderr from logs
+    const stdoutLogs = execution.logs?.stdout || [];
+    const stderrLogs = execution.logs?.stderr || [];
+    const allLogs = [...stdoutLogs, ...stderrLogs];
+
+    return {
+      output: execution.text || null,
+      error: execution.error ? execution.error.value : null,
+      logs: allLogs,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      results: execution.results.map((r: any) => ({
+        type: r.text ? "text" : r.png ? "image" : "data",
+        data: r.text || r.png || r.json,
+      })),
+    };
+  } catch (err) {
+    console.error("❌ Execution error:", err);
+    return {
+      output: null,
+      error: err instanceof Error ? err.message : String(err),
+      logs: [],
+      results: [],
+    };
+  } finally {
+    await sandbox.kill();
+    console.log("🗑️ Sandbox cleaned up");
+  }
+}
+
+// Google tool definition
+const codeExecutionToolGoogle = {
+  description:
+    "Execute Python or JavaScript code in a secure sandbox. Returns the output, errors, and logs from execution.",
+  parameters: z.object({
+    code: z
+      .string()
+      .describe(
+        "The code to execute. Must be valid Python or JavaScript code without markdown formatting.",
+      ),
+    language: z
+      .enum(["python", "javascript"])
+      .optional()
+      .describe(
+        "The programming language of the code. Defaults to python if not specified.",
+      ),
+  }),
+  execute: executeCodeInSandbox,
+};
 
 export async function POST(req: NextRequest) {
   try {
@@ -316,29 +432,101 @@ export async function POST(req: NextRequest) {
       return gemini(modelConfig.modelId);
     })();
 
-    const systemPrompt = useSearch
-      ? "You have access to web search. Use the google_search tool to find current information when the user asks about recent events, news, weather, or anything that requires up-to-date information. Always search for the most relevant and current information."
-      : undefined;
+    // Build system prompt with tool instructions (Google only)
+    let systemPrompt = "You are a helpful AI assistant";
 
-    const tools =
-      provider === "google" && useSearch
-        ? {
-            google_search: google.tools.googleSearch({}),
-          }
-        : undefined;
+    if (provider === "google") {
+      systemPrompt += " with access to tools. ";
+
+      if (useSearch) {
+        systemPrompt +=
+          "Use the google_search tool to find current information when the user asks about recent events, news, weather, or anything that requires up-to-date information. ";
+      }
+
+      systemPrompt +=
+        "\n\nIMPORTANT: When the user asks for calculations, code execution, data processing, or programming tasks, you MUST use the executeCode tool.\n" +
+        "To use executeCode:\n" +
+        "1. Write the code you want to execute\n" +
+        "2. Pass it to the executeCode tool with the 'code' parameter\n" +
+        "3. The code parameter must contain the actual code as a string (no markdown, no backticks)\n" +
+        "4. Optionally specify 'language' as 'python' or 'javascript'\n" +
+        "5. The tool will execute the code and return the output\n" +
+        "6. After receiving results, explain them to the user\n\n" +
+        "Example: If user asks 'calculate 2+2', call executeCode with code='print(2+2)' and language='python'";
+    } else {
+      systemPrompt += ".";
+    }
+
+    // Build tools object with code execution + optional search
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tools: Record<string, any> = {};
+
+    // Only add tools for Google (Groq has validation issues with custom tools)
+    if (provider === "google") {
+      tools.executeCode = codeExecutionToolGoogle;
+
+      if (useSearch) {
+        tools.google_search = google.tools.googleSearch({});
+      }
+    }
+
+    // Only pass tools if we have any defined
+    const hasTools = Object.keys(tools).length > 0;
 
     const response = await streamText({
       model: llm,
       system: systemPrompt,
       messages: formatted,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      tools: tools as any,
+      ...(hasTools ? { tools: tools as any } : {}),
     });
 
     let full = "";
+    let hasToolCalls = false;
 
-    // Wait for the stream to complete and save message
-    for await (const chunk of response.textStream) full += chunk;
+    // Use fullStream to capture text, tool calls, and tool results
+    for await (const part of response.fullStream) {
+      if (part.type === "text-delta") {
+        full += part.text;
+      } else if (part.type === "tool-call") {
+        hasToolCalls = true;
+        console.log("Tool called:", part.toolName);
+      } else if (part.type === "tool-result") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = (part as any).output as {
+          output?: string | null;
+          error?: string | null;
+          logs?: string[];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          results?: Array<{ type: string; data: any }>;
+        };
+
+        // Append tool results to the response
+        full += "\n\n**Code Execution Result:**\n";
+
+        if (result.error) {
+          full += `\n❌ **Error:** ${result.error}\n`;
+        }
+
+        if (result.output) {
+          full += `\n\`\`\`\n${result.output}\n\`\`\`\n`;
+        }
+
+        if (result.logs && result.logs.length > 0) {
+          full += `\n**Output:**\n\`\`\`\n${result.logs.join("").trim()}\n\`\`\`\n`;
+        }
+
+        if (result.results && result.results.length > 0) {
+          for (const res of result.results) {
+            if (res.type === "image" && typeof res.data === "string") {
+              full += `\n![Generated Image](data:image/png;base64,${res.data})\n`;
+            } else if (res.type === "text") {
+              full += `\n${res.data}\n`;
+            }
+          }
+        }
+      }
+    }
 
     const usage = await response.usage;
     const totalTokens = usage?.totalTokens || 0;

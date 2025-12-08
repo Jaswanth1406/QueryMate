@@ -13,6 +13,7 @@ import {
 import { MemoizedMarkdown } from "./MemoizedMarkdown";
 import { mutateConversations, mutateUsage } from "./ChatSidebar";
 import { MODELS, MODEL_GROUPS, type Provider } from "@/lib/models";
+import ModelInfoModal from "./ModelInfoModal";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -667,6 +668,9 @@ export default function ChatBox({
                     )}
                   </SelectContent>
                 </Select>
+
+                {/* Model Info Button */}
+                <ModelInfoModal currentModel={selectedModel} />
               </div>
 
               {/* Right side - Submit/Stop button */}
