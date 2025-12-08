@@ -22,14 +22,6 @@ export interface ModelConfig {
 
 export const MODELS: Record<string, ModelConfig> = {
   // Google Gemini Models (using stable version names)
-  "gemini-2.5-pro": {
-    id: "gemini-2.5-pro",
-    name: "Gemini 2.5 Pro",
-    provider: "google",
-    modelId: "gemini-2.5-pro",
-    description: "Advanced thinking model",
-    supportsTokenUsage: true,
-  },
   "gemini-2.5-flash": {
     id: "gemini-2.5-flash",
     name: "Gemini 2.5 Flash",
@@ -168,12 +160,7 @@ export const MODEL_GROUPS: Record<
   google: {
     name: "Google",
     icon: "🧠",
-    models: [
-      "gemini-2.5-pro",
-      "gemini-2.5-flash",
-      "gemini-2.5-flash-lite",
-      "gemini-2.0-flash",
-    ],
+    models: ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"],
   },
   perplexity: {
     name: "Perplexity",
