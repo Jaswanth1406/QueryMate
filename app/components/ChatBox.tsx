@@ -525,7 +525,7 @@ export default function ChatBox({
                   );
                 })}
               </div>
-              {attachedFiles.some((f) => !f.type.startsWith("image/")) && (
+              {attachedFiles.length > 0 && (
                 <p className="text-xs text-muted-foreground mb-2">
                   💡 Tip: Both Google and Perplexity models support images and
                   PDFs. Groq models don&apos;t support file attachments.

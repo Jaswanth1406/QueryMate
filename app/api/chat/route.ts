@@ -157,50 +157,6 @@ export async function POST(req: NextRequest) {
       tokensUsed: null,
     });
 
-    // Check if this is the first message in conversation
-    const messageCount = await db
-      .select()
-      .from(messages)
-      .where(eq(messages.conversationId, conversationId));
-
-    if (messageCount.length === 1) {
-      // Generate title using LLM (use a fast model for title generation)
-      try {
-        const titleGen = await streamText({
-          model: gemini("gemini-2.5-flash"),
-          messages: [
-            {
-              role: "user",
-              content: `Generate a very short 3-word title for this message. Output ONLY the title, nothing else: "${userMessage}"`,
-            },
-          ],
-        });
-
-        let generatedTitle = "";
-        for await (const chunk of titleGen.textStream) {
-          generatedTitle += chunk;
-        }
-
-        // Clean up the title and limit length
-        generatedTitle = generatedTitle.replace(/['"]/g, "").trim();
-
-        // Truncate title if it's too long (max 30 characters)
-        if (generatedTitle.length > 30) {
-          generatedTitle = generatedTitle.substring(0, 27) + "...";
-        }
-
-        // Update conversation with generated title
-        if (generatedTitle) {
-          await db
-            .update(conversations)
-            .set({ title: generatedTitle })
-            .where(eq(conversations.id, conversationId));
-        }
-      } catch (titleError) {
-        console.error("Error generating title:", titleError);
-      }
-    }
-
     const history = await db
       .select()
       .from(messages)
@@ -310,6 +266,45 @@ export async function POST(req: NextRequest) {
         tokensUsed: null,
       });
 
+      // Check if this is the first message in conversation and generate title
+      const messageCount = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.conversationId, conversationId));
+
+      if (messageCount.length === 2) {
+        // 2 messages means first user message + first assistant response
+        try {
+          const { text: generatedTitle } = await generateText({
+            model: perplexity(modelConfig.modelId),
+            messages: [
+              {
+                role: "user",
+                content: `Generate a very short 3-word title for this message. Output ONLY the title, nothing else: "${userMessage}"`,
+              },
+            ],
+          });
+
+          // Clean up the title and limit length
+          let cleanTitle = generatedTitle.replace(/['"]/g, "").trim();
+
+          // Truncate title if it's too long (max 30 characters)
+          if (cleanTitle.length > 30) {
+            cleanTitle = cleanTitle.substring(0, 27) + "...";
+          }
+
+          // Update conversation with generated title
+          if (cleanTitle) {
+            await db
+              .update(conversations)
+              .set({ title: cleanTitle })
+              .where(eq(conversations.id, conversationId));
+          }
+        } catch (titleError) {
+          console.error("Error generating title:", titleError);
+        }
+      }
+
       return new Response(final, {
         headers: { "Content-Type": "text/plain" },
       });
@@ -356,6 +351,50 @@ export async function POST(req: NextRequest) {
       model,
       tokensUsed: totalTokens,
     });
+
+    // Check if this is the first message in conversation and generate title
+    const messageCount = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.conversationId, conversationId));
+
+    if (messageCount.length === 2) {
+      // 2 messages means first user message + first assistant response
+      try {
+        const titleGen = await streamText({
+          model: llm,
+          messages: [
+            {
+              role: "user",
+              content: `Generate a very short 3-word title for this message. Output ONLY the title, nothing else: "${userMessage}"`,
+            },
+          ],
+        });
+
+        let generatedTitle = "";
+        for await (const chunk of titleGen.textStream) {
+          generatedTitle += chunk;
+        }
+
+        // Clean up the title and limit length
+        generatedTitle = generatedTitle.replace(/['"]/g, "").trim();
+
+        // Truncate title if it's too long (max 30 characters)
+        if (generatedTitle.length > 30) {
+          generatedTitle = generatedTitle.substring(0, 27) + "...";
+        }
+
+        // Update conversation with generated title
+        if (generatedTitle) {
+          await db
+            .update(conversations)
+            .set({ title: generatedTitle })
+            .where(eq(conversations.id, conversationId));
+        }
+      } catch (titleError) {
+        console.error("Error generating title:", titleError);
+      }
+    }
 
     if (provider === "google") {
       await db
