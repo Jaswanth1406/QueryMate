@@ -1,6 +1,6 @@
 // app/api/chat/route.ts
 import { db } from "@/lib/lib";
-import { messages, conversations, user, TOKEN_LIMITS } from "@/lib/schema";
+import { messages, conversations, user } from "@/lib/schema";
 import { streamText, generateText } from "ai";
 import { gemini } from "@/lib/ai-gemini";
 import { perplexity } from "@/lib/ai-perplexity";
@@ -12,6 +12,50 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth-middleware";
 import CodeInterpreter from "@e2b/code-interpreter";
 import { z } from "zod";
+import { Buffer } from "buffer";
+
+function getFileSupport(
+  mimeType: string,
+  provider: string,
+): {
+  supported: boolean;
+  type: "image" | "pdf" | "text" | "audio" | "document" | "unsupported";
+} {
+  if (mimeType.startsWith("image/")) {
+    return { supported: true, type: "image" };
+  }
+
+  if (
+    mimeType === "application/pdf" &&
+    (provider === "google" || provider === "perplexity")
+  ) {
+    return { supported: true, type: "pdf" };
+  }
+
+  if (
+    (mimeType === "application/msword" ||
+      mimeType ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document") &&
+    provider === "google"
+  ) {
+    return { supported: true, type: "document" };
+  }
+
+  if (
+    (mimeType === "audio/wav" ||
+      mimeType === "audio/mp3" ||
+      mimeType === "audio/mpeg") &&
+    provider === "google"
+  ) {
+    return { supported: true, type: "audio" };
+  }
+
+  if (mimeType === "text/plain" || mimeType.startsWith("text/")) {
+    return { supported: true, type: "text" };
+  }
+
+  return { supported: false, type: "unsupported" };
+}
 
 async function checkAndResetDailyTokens(userId: string) {
   const [userData] = await db.select().from(user).where(eq(user.id, userId));
@@ -49,18 +93,24 @@ interface UserData {
   requestsUsedGemini: number;
 }
 
-function checkLimits(userData: UserData, provider: string) {
-  if (provider === "google") {
-    if (userData.tokensUsedGemini >= TOKEN_LIMITS.gemini.dailyTokens) {
+function checkLimits(
+  userData: UserData,
+  modelConfig: { provider: string; limits?: { tpd?: number; rpd?: number } },
+) {
+  if (modelConfig.provider === "google" && modelConfig.limits) {
+    const dailyTokenLimit = modelConfig.limits.tpd || 1_000_000;
+    const dailyRequestLimit = modelConfig.limits.rpd || 100;
+
+    if (userData.tokensUsedGemini >= dailyTokenLimit) {
       return {
         exceeded: true,
-        message: `Daily token limit reached for Gemini.`,
+        message: `Daily token limit reached (${dailyTokenLimit.toLocaleString()} tokens/day).`,
       };
     }
-    if (userData.requestsUsedGemini >= TOKEN_LIMITS.gemini.dailyRequests) {
+    if (userData.requestsUsedGemini >= dailyRequestLimit) {
       return {
         exceeded: true,
-        message: `Daily request limit reached for Gemini.`,
+        message: `Daily request limit reached (${dailyRequestLimit} requests/day).`,
       };
     }
   }
@@ -187,19 +237,22 @@ export async function POST(req: NextRequest) {
     if (!session)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await req.json();
+    const formData = await req.formData();
 
-    let { conversationId } = body;
-    const {
-      message,
-      prompt,
-      title,
-      model = "gemini-2.5-flash",
-      files = [],
-      useSearch = false,
-    } = body;
+    let conversationId = formData.get("conversationId") as string | null;
+    const message = formData.get("message") as string;
+    const title = formData.get("title") as string | null;
+    const model = (formData.get("model") as string) || "gemini-2.5-flash";
+    const useSearch = formData.get("useSearch") === "true";
 
-    const userMessage = message || prompt;
+    const files: File[] = [];
+    for (const [key, value] of formData.entries()) {
+      if (key.startsWith("file_") && value instanceof File) {
+        files.push(value);
+      }
+    }
+
+    const userMessage = message;
     if (!userMessage)
       return NextResponse.json(
         { error: "message is required" },
@@ -217,7 +270,7 @@ export async function POST(req: NextRequest) {
     if (!userData)
       return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-    const limitCheck = checkLimits(userData, modelConfig.provider);
+    const limitCheck = checkLimits(userData, modelConfig);
     if (limitCheck.exceeded)
       return NextResponse.json({ error: limitCheck.message }, { status: 429 });
 
@@ -264,11 +317,30 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Save user message (raw text only)
+    // Build file metadata for storage
+    const fileMetadata: Array<{
+      name: string;
+      type: string;
+      size: number;
+    }> = [];
+
+    // Save user message with file metadata if present
+    const dbMessageContent =
+      files.length > 0
+        ? JSON.stringify({
+            text: userMessage,
+            files: files.map((f) => ({
+              name: f.name,
+              type: f.type,
+              size: f.size,
+            })),
+          })
+        : userMessage;
+
     await db.insert(messages).values({
       conversationId,
       role: "user",
-      content: userMessage,
+      content: dbMessageContent,
       model: null,
       tokensUsed: null,
     });
@@ -279,79 +351,105 @@ export async function POST(req: NextRequest) {
       .where(eq(messages.conversationId, conversationId))
       .orderBy(messages.createdAt);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const formatted: any[] = history.map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
-
-    type ContentPart =
-      | { type: "text"; text: string }
-      | { type: "image"; image: string };
-
-    let currentMessageContent: string | ContentPart[] = userMessage;
+    // Build multimodal content for the CURRENT message only
+    let userMessageContent:
+      | string
+      | Array<
+          | { type: "text"; text: string }
+          | { type: "image"; image: string | ArrayBuffer | Uint8Array | Buffer }
+          | {
+              type: "file";
+              mediaType: string;
+              data: string | ArrayBuffer | Uint8Array | Buffer;
+            }
+        >;
 
     const provider = modelConfig.provider;
 
-    // ✅ GEMINI — supports: TEXT, IMAGE ONLY
-    if (provider === "google") {
-      const parts: ContentPart[] = [{ type: "text", text: userMessage }];
+    if (files.length > 0) {
+      const parts: Array<
+        | { type: "text"; text: string }
+        | { type: "image"; image: Buffer }
+        | { type: "file"; mediaType: string; data: Buffer }
+      > = [];
+      parts.push({ type: "text", text: userMessage });
 
-      for (const f of files) {
-        if (f.type.startsWith("image/")) {
+      for (const file of files) {
+        const mimeType = file.type;
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        const fileSupport = getFileSupport(mimeType, provider);
+
+        fileMetadata.push({
+          name: file.name,
+          type: mimeType,
+          size: file.size,
+        });
+
+        if (fileSupport.type === "image") {
           parts.push({
             type: "image",
-            image: f.data,
+            image: buffer,
           });
-        } else if (f.type === "application/pdf") {
-          const base64 = f.data.split(",")[1];
+        } else if (
+          fileSupport.type === "pdf" ||
+          fileSupport.type === "document" ||
+          fileSupport.type === "audio"
+        ) {
+          // ✅ Correct property: mediaType (not mimeType)
+          parts.push({
+            type: "file",
+            mediaType: mimeType,
+            data: buffer,
+          });
+        } else if (fileSupport.type === "text") {
+          const textContent = buffer.toString("utf-8");
           parts.push({
             type: "text",
-            text: `PDF attached (base64):\n${base64}`,
-          });
-        } else {
-          parts.push({
-            type: "text",
-            text: `File attached: ${f.name} (${f.type})`,
+            text: `\n\n[Content from file: ${file.name}]\n${textContent}\n[End of file content]\n`,
           });
         }
       }
 
-      currentMessageContent = parts;
+      userMessageContent = parts;
+    } else {
+      userMessageContent = userMessage;
     }
 
-    // ✅ PERPLEXITY — FULL MULTIMODAL SUPPORT
-    else if (provider === "perplexity") {
-      // Perplexity expects multimodal as separate message content, not array in same message
-      let msg = userMessage;
-      for (const f of files) {
-        if (f.type.startsWith("image/")) {
-          msg += `\n[Image attached: ${f.name}]`;
-        } else if (f.type === "application/pdf") {
-          msg += `\n[PDF attached: ${f.name}]`;
-        } else {
-          msg += `\n[File attached: ${f.name} (${f.type})]`;
+    // Format history: ALWAYS string content (AI SDK requirement)
+    const formattedHistory = history.slice(0, -1).map((m) => {
+      let textContent: unknown = m.content ?? "";
+
+      // Try to unwrap JSON { text, files } structure
+      if (typeof textContent === "string") {
+        try {
+          const parsed = JSON.parse(textContent);
+          if (parsed && typeof parsed.text === "string") {
+            textContent = parsed.text;
+          }
+        } catch {
+          // Not JSON, keep as is
         }
       }
-      currentMessageContent = msg;
-    }
 
-    // ✅ GROQ — no multimodal → append filenames
-    else {
-      let msg = userMessage;
-      for (const f of files) {
-        msg += `\n\n[Attached: ${f.name} (${f.type})]`;
+      if (typeof textContent !== "string") {
+        textContent = JSON.stringify(textContent);
       }
-      currentMessageContent = msg;
-    }
 
-    // Update the last message in formatted array (which is the user message we just saved)
-    if (
-      formatted.length > 0 &&
-      formatted[formatted.length - 1].role === "user"
-    ) {
-      formatted[formatted.length - 1].content = currentMessageContent;
-    }
+      return {
+        role: m.role as "user" | "assistant",
+        content: textContent as string,
+      };
+    });
+
+    // Remove the old formatted array usage
+    const formatted = [
+      ...formattedHistory,
+      {
+        role: "user" as const,
+        content: userMessageContent,
+      },
+    ];
 
     if (provider === "perplexity") {
       const { text, sources } = await generateText({
@@ -444,15 +542,26 @@ export async function POST(req: NextRequest) {
       }
 
       systemPrompt +=
-        "\n\nIMPORTANT: When the user asks for calculations, code execution, data processing, or programming tasks, you MUST use the executeCode tool.\n" +
+        "\n\nYou have access to the executeCode tool for running Python or JavaScript code.\n\n" +
+        "USE executeCode ONLY when:\n" +
+        "- User explicitly asks to write, run, or execute code\n" +
+        "- User requests calculations requiring computation (e.g., 'calculate fibonacci of 100', 'find prime numbers up to 1000')\n" +
+        "- User asks for data analysis, processing, or visualization\n" +
+        "- Complex mathematical operations that benefit from code\n\n" +
+        "DO NOT use executeCode for:\n" +
+        "- Explaining concepts, features, or answering informational questions\n" +
+        "- Simple arithmetic (e.g., '2+2' can be answered directly as 4)\n" +
+        "- Providing definitions or general knowledge\n" +
+        "- Normal conversation\n\n" +
+        "Example:\n" +
+        "✓ 'calculate factorial of 50' → use executeCode\n" +
+        "✓ 'generate fibonacci sequence up to 1000' → use executeCode\n" +
+        "✗ 'explain what is fibonacci' → answer directly\n" +
+        "✗ 'what is gemini 2.5 flash' → answer directly\n\n" +
         "To use executeCode:\n" +
-        "1. Write the code you want to execute\n" +
-        "2. Pass it to the executeCode tool with the 'code' parameter\n" +
-        "3. The code parameter must contain the actual code as a string (no markdown, no backticks)\n" +
-        "4. Optionally specify 'language' as 'python' or 'javascript'\n" +
-        "5. The tool will execute the code and return the output\n" +
-        "6. After receiving results, explain them to the user\n\n" +
-        "Example: If user asks 'calculate 2+2', call executeCode with code='print(2+2)' and language='python'";
+        "1. Pass the code as a string in the 'code' parameter (no markdown, no backticks)\n" +
+        "2. Optionally specify 'language' as 'python' or 'javascript'\n" +
+        "3. Explain the results to the user after execution";
     } else {
       systemPrompt += ".";
     }
@@ -482,14 +591,12 @@ export async function POST(req: NextRequest) {
     });
 
     let full = "";
-    let hasToolCalls = false;
 
     // Use fullStream to capture text, tool calls, and tool results
     for await (const part of response.fullStream) {
       if (part.type === "text-delta") {
         full += part.text;
       } else if (part.type === "tool-call") {
-        hasToolCalls = true;
         console.log("Tool called:", part.toolName);
       } else if (part.type === "tool-result") {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

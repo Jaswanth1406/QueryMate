@@ -1,6 +1,6 @@
 // app/api/usage/route.ts
 import { db } from "@/lib/lib";
-import { user, TOKEN_LIMITS } from "@/lib/schema";
+import { user } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth-middleware";
@@ -34,14 +34,16 @@ export async function GET(req: NextRequest) {
       now.getMonth() !== resetAt.getMonth() ||
       now.getFullYear() !== resetAt.getFullYear();
 
-    // Gemini has tracked limits, Perplexity is unlimited (doesn't return token usage)
+    // Note: Limits vary by model. These are approximate averages.
+    // Flash: 250k tokens/day, 20 requests/day
+    // Flash Lite: 250k tokens/day, 20 requests/day
     const usage = needsReset
       ? {
           gemini: {
             tokensUsed: 0,
-            tokensLimit: TOKEN_LIMITS.gemini.dailyTokens,
+            tokensLimit: 250000, // Average limit
             requestsUsed: 0,
-            requestsLimit: TOKEN_LIMITS.gemini.dailyRequests,
+            requestsLimit: 20, // Average limit
           },
           perplexity: {
             unlimited: true,
@@ -50,9 +52,9 @@ export async function GET(req: NextRequest) {
       : {
           gemini: {
             tokensUsed: userData.tokensUsedGemini,
-            tokensLimit: TOKEN_LIMITS.gemini.dailyTokens,
+            tokensLimit: 250000, // Average limit
             requestsUsed: userData.requestsUsedGemini,
-            requestsLimit: TOKEN_LIMITS.gemini.dailyRequests,
+            requestsLimit: 20, // Average limit
           },
           perplexity: {
             unlimited: true,

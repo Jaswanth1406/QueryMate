@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useCompletion } from "@ai-sdk/react";
 import {
   GlobeIcon,
   PlusIcon,
@@ -35,6 +34,7 @@ type ChatMessage = {
   content: string;
   sources?: string[];
   imageUrls?: string[];
+  files?: Array<{ name: string; type: string; size: number }>;
 };
 
 // Helper functions for model capabilities
@@ -58,7 +58,7 @@ const STARTER_SUGGESTIONS = [
   "What's the weather like?",
 ];
 
-function TypingIndicator() {
+function TypingIndicator({ isSearching }: { isSearching?: boolean }) {
   return (
     <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
       <div className="flex gap-1">
@@ -72,7 +72,7 @@ function TypingIndicator() {
           style={{ animationDelay: "240ms" }}
         />
       </div>
-      <span>Thinking…</span>
+      <span>{isSearching ? "Searching…" : "Thinking…"}</span>
     </div>
   );
 }
@@ -97,95 +97,13 @@ export default function ChatBox({
   const [currentConvId, setCurrentConvId] = useState<string | null>(
     conversationId,
   );
+  const [isLoading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const baseTextRef = useRef<string>(""); // Store text before speech started
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const completionRef = useRef<string>("");
-
-  // Use AI SDK's useCompletion hook for streaming with stop functionality
-  const {
-    completion,
-    complete,
-    isLoading,
-    stop: stopCompletion,
-    setCompletion,
-  } = useCompletion({
-    api: "/api/chat",
-    streamProtocol: "text",
-    onFinish: () => {
-      mutateUsage();
-      mutateConversations();
-    },
-    onError: (error) => {
-      console.error("Completion error:", error);
-      // Keep partial completion if any
-      if (completionRef.current) {
-        setMessages((prev) => {
-          const updated = [...prev];
-          if (
-            updated.length &&
-            updated[updated.length - 1].role === "assistant"
-          ) {
-            updated[updated.length - 1].content =
-              completionRef.current + "\n\n*[Error: Connection interrupted]*";
-          }
-          return updated;
-        });
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: "Unable to connect. Please try again.",
-          },
-        ]);
-      }
-    },
-  });
-
-  // Custom stop function that preserves the partial message
-  const handleStop = () => {
-    // Save the current completion before stopping
-    const partialMessage = completionRef.current;
-    stopCompletion();
-
-    // Make sure the partial message stays in the chat
-    if (partialMessage) {
-      setMessages((prev) => {
-        const updated = [...prev];
-        if (
-          updated.length &&
-          updated[updated.length - 1].role === "assistant"
-        ) {
-          updated[updated.length - 1].content = partialMessage;
-        } else {
-          updated.push({ role: "assistant", content: partialMessage });
-        }
-        return updated;
-      });
-    }
-  };
-
-  // Sync completion to messages and keep ref updated
-  useEffect(() => {
-    if (completion) {
-      completionRef.current = completion;
-      setMessages((prev) => {
-        const updated = [...prev];
-        if (
-          updated.length &&
-          updated[updated.length - 1].role === "assistant"
-        ) {
-          updated[updated.length - 1].content = completion;
-        } else {
-          updated.push({ role: "assistant", content: completion });
-        }
-        return updated;
-      });
-    }
-  }, [completion]);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const shouldStopRef = useRef(false);
 
   // Sync conversationId prop to local state
   useEffect(() => {
@@ -269,9 +187,32 @@ export default function ChatBox({
       });
       const data = await res.json();
       if (isMounted) {
+        // Parse messages to extract file metadata from JSON content
+        const parsedMessages =
+          data.messages?.map(
+            (msg: { content: string; role: string; id?: string }) => {
+              try {
+                const parsed = JSON.parse(msg.content);
+                if (parsed && typeof parsed.text === "string" && parsed.files) {
+                  return {
+                    role: msg.role,
+                    content: parsed.text,
+                    files: parsed.files,
+                  };
+                }
+              } catch {
+                // Not JSON, regular message
+              }
+              return {
+                role: msg.role,
+                content: msg.content,
+              };
+            },
+          ) || [];
+
         setMessages(
-          data.messages?.length
-            ? data.messages
+          parsedMessages.length
+            ? parsedMessages
             : [{ role: "assistant", content: chatTitle || "Chat started." }],
         );
       }
@@ -292,58 +233,144 @@ export default function ChatBox({
     const trimmed = text.trim();
     if (!trimmed || isLoading) return;
 
-    setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
+    // Store file metadata for display
+    const fileMetadata = attachedFiles.map((f) => ({
+      name: f.name,
+      type: f.type,
+      size: f.size,
+    }));
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: trimmed,
+        files: fileMetadata.length > 0 ? fileMetadata : undefined,
+      },
+    ]);
     setInput("");
-    setCompletion(""); // Reset completion for new message
-    completionRef.current = ""; // Reset ref for new message
 
-    // Convert attached files to base64
-    const fileData: Array<{ name: string; type: string; data: string }> = [];
-    for (const file of attachedFiles) {
-      const data = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      fileData.push({
-        name: file.name,
-        type: file.type,
-        data,
-      });
-    }
+    // Build FormData for file uploads
+    const formData = new FormData();
+    formData.append("message", trimmed);
+    formData.append("model", selectedModel);
+    formData.append("useSearch", useSearch ? "true" : "false");
+    if (currentConvId) formData.append("conversationId", currentConvId);
 
-    setAttachedFiles([]);
-
-    // Build the body for the completion request
-    const bodyData: Record<string, unknown> = {
-      model: selectedModel,
-      useSearch,
-    };
-    if (fileData.length > 0) bodyData.files = fileData;
-    if (currentConvId) bodyData.conversationId = currentConvId;
-
-    // Use the complete function from useCompletion
-    await complete(trimmed, {
-      body: bodyData,
+    attachedFiles.forEach((file, index) => {
+      formData.append(`file_${index}`, file);
     });
 
-    // After completion, fetch new conversation if needed
-    if (!currentConvId) {
-      mutateConversations();
-      const convRes = await fetch("/api/conversations", {
+    setAttachedFiles([]);
+    setLoading(true);
+    shouldStopRef.current = false;
+
+    // Create AbortController for cancellation
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    // Manual fetch with FormData for file uploads
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
         credentials: "include",
+        body: formData,
+        signal: abortController.signal,
       });
-      if (convRes.ok) {
-        const convData = await convRes.json();
-        const list = convData.conversations || [];
-        if (list.length) {
-          const newest = list[list.length - 1];
-          setConversationId(newest.id);
-          setCurrentConvId(newest.id);
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to send message");
+      }
+
+      // Stream response
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let full = "";
+
+      if (reader) {
+        try {
+          while (!shouldStopRef.current) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            full += chunk;
+
+            // Update messages immediately during streaming
+            setMessages((prev) => {
+              const updated = [...prev];
+              if (
+                updated.length &&
+                updated[updated.length - 1].role === "assistant"
+              ) {
+                updated[updated.length - 1].content = full;
+              } else {
+                updated.push({ role: "assistant", content: full });
+              }
+              return updated;
+            });
+          }
+
+          // Clean up reader
+          reader.releaseLock();
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") {
+            console.log("Stream cancelled by user");
+          } else {
+            throw error;
+          }
         }
       }
+
+      mutateUsage();
+      mutateConversations();
+
+      // Fetch new conversation if needed
+      if (!currentConvId) {
+        const convRes = await fetch("/api/conversations", {
+          credentials: "include",
+        });
+        if (convRes.ok) {
+          const convData = await convRes.json();
+          const list = convData.conversations || [];
+          if (list.length) {
+            const newest = list[list.length - 1];
+            setConversationId(newest.id);
+            setCurrentConvId(newest.id);
+          }
+        }
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        console.log("Request cancelled by user");
+        return;
+      }
+
+      console.error("Chat error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            error instanceof Error
+              ? `Error: ${error.message}`
+              : "Unable to connect. Please try again.",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+      abortControllerRef.current = null;
+      shouldStopRef.current = false;
     }
+  }
+
+  function stop() {
+    shouldStopRef.current = true;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setLoading(false);
   }
 
   function handleNewChat() {
@@ -353,7 +380,6 @@ export default function ChatBox({
     setInput("");
     setAttachedFiles([]);
     setUseSearch(false);
-    setCompletion("");
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -434,6 +460,74 @@ export default function ChatBox({
                     {msg.role === "user" ? (
                       <div>
                         <p className="text-sm text-foreground">{msg.content}</p>
+                        {msg.files && msg.files.length > 0 && (
+                          <div className="mt-2 flex flex-col gap-2">
+                            {msg.files.map((file, idx) => {
+                              const isImage = file.type.startsWith("image/");
+                              const isPDF = file.type === "application/pdf";
+                              return (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-2 rounded-lg bg-background/50 px-3 py-2 text-xs border border-border"
+                                >
+                                  <div className="flex h-8 w-8 items-center justify-center rounded bg-secondary">
+                                    {isImage ? (
+                                      <svg
+                                        className="h-4 w-4 text-muted-foreground"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                        />
+                                      </svg>
+                                    ) : isPDF ? (
+                                      <svg
+                                        className="h-4 w-4 text-muted-foreground"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                        />
+                                      </svg>
+                                    ) : (
+                                      <svg
+                                        className="h-4 w-4 text-muted-foreground"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                        />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 overflow-hidden">
+                                    <p className="truncate font-medium text-foreground">
+                                      {file.name}
+                                    </p>
+                                    <p className="text-muted-foreground">
+                                      {(file.size / 1024).toFixed(1)} KB
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                         {msg.imageUrls && msg.imageUrls.length > 0 && (
                           <div className="mt-2 flex gap-2 flex-wrap">
                             {msg.imageUrls.map((url, idx) => (
@@ -473,7 +567,7 @@ export default function ChatBox({
                   </div>
                 </div>
               ))}
-              {isLoading && <TypingIndicator />}
+              {isLoading && <TypingIndicator isSearching={useSearch} />}
             </div>
           )}
         </div>
@@ -519,9 +613,7 @@ export default function ChatBox({
                         onClick={() => removeFile(idx)}
                         className="text-muted-foreground hover:text-foreground"
                         title="Remove file"
-                      >
-                        ×
-                      </button>
+                      ></button>
                     </div>
                   );
                 })}
@@ -680,7 +772,7 @@ export default function ChatBox({
                   size="icon"
                   variant="destructive"
                   className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex-shrink-0"
-                  onClick={handleStop}
+                  onClick={stop}
                   title="Stop generation"
                   suppressHydrationWarning
                 >

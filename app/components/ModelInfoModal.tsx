@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { Badge } from "./ui/badge";
-import { getModel, MODELS, Provider } from "@/lib/models";
+import { getModel, Provider } from "@/lib/models";
 import { Info } from "lucide-react";
 
 interface ModelInfoModalProps {

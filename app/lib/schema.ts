@@ -8,16 +8,6 @@ import {
 } from "drizzle-orm/pg-core";
 
 //
-// --- Token Limits Configuration (Gemini only - Perplexity doesn't return token usage) ---
-//
-export const TOKEN_LIMITS = {
-  gemini: {
-    dailyTokens: 1_000_000, // 1M tokens per day
-    dailyRequests: 100,
-  },
-} as const;
-
-//
 // --- Better Auth required tables ---
 //
 export const user = pgTable("user", {
