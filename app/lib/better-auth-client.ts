@@ -218,3 +218,20 @@ export const signIn = {
     }
   },
 };
+
+export const signOut = async (): Promise<ApiResult> => {
+  try {
+    await client.signOut();
+    showToast("success", "Signed out successfully!");
+    return { data: true };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error
+        ? err.message
+        : typeof err === "string"
+          ? err
+          : JSON.stringify(err);
+    showToast("error", message);
+    return { error: message };
+  }
+};

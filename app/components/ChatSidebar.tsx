@@ -4,6 +4,7 @@ import { useState } from "react";
 import useSWR, { mutate } from "swr";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { showToast } from "@/lib/toastify";
+import { signOut } from "@/lib/better-auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -339,15 +340,9 @@ export default function ChatSidebar({
   };
 
   const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/sign-out", {
-        method: "POST",
-        credentials: "include",
-      });
+    const result = await signOut();
+    if (!result.error) {
       window.location.href = "/auth/login";
-    } catch (error) {
-      console.error("Logout error:", error);
-      alert("Failed to logout");
     }
   };
 
@@ -593,6 +588,7 @@ export default function ChatSidebar({
           <button
             onClick={() => setProfileExpanded(!profileExpanded)}
             className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+            suppressHydrationWarning
           >
             <div className="w-9 h-9 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center text-sm font-semibold">
               {initial}
