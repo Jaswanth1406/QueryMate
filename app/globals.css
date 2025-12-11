@@ -66,3 +66,50 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Mobile-responsive code blocks */
+@layer components {
+  .prose pre {
+    @apply overflow-x-auto max-w-full;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .prose pre code {
+    @apply text-xs;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  .prose code {
+    @apply text-xs break-words;
+    word-break: break-word;
+  }
+
+  /* Ensure code blocks don't overflow on mobile */
+  @media (max-width: 640px) {
+    .prose pre {
+      font-size: 11px !important;
+      padding: 0.5rem !important;
+      border-radius: 0.375rem;
+      max-width: calc(100vw - 2rem) !important;
+      overflow-x: hidden !important;
+    }
+
+    .prose pre code {
+      font-size: 11px !important;
+      white-space: pre-wrap !important;
+      word-break: break-all !important;
+      overflow-wrap: anywhere !important;
+      display: block;
+      max-width: 100%;
+    }
+
+    .prose code {
+      font-size: 11px !important;
+    }
+  }
+}

@@ -39,16 +39,16 @@ export default function ChatPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="fixed top-4 left-4 z-20 h-10 w-10 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-md hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="fixed top-2 left-2 sm:top-3 sm:left-3 z-20 h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 backdrop-blur-sm"
             onClick={() => setSidebarOpen(true)}
             aria-label="Open Sidebar"
             suppressHydrationWarning
           >
-            <MenuIcon className="w-5 h-5 text-black dark:text-white" />
+            <MenuIcon className="w-4 h-4 sm:w-5 sm:h-5 text-black dark:text-white" />
           </Button>
         )}
 
-        <div className="flex-1 h-0 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-hidden">
           <ChatBox
             conversationId={convId}
             setConversationId={setConvId}

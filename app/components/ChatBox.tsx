@@ -410,24 +410,35 @@ export default function ChatBox({
 
   return (
     <div className="flex flex-col h-full bg-background">
+      {/* Chat Header - Shows title only on larger screens when there's a conversation */}
+      {(conversationId || messages.length > 0) && (
+        <div className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 hidden sm:block">
+          <div className="max-w-3xl mx-auto w-full px-6 py-3">
+            <h2 className="text-sm font-medium text-foreground truncate">
+              {chatTitle || "New Chat"}
+            </h2>
+          </div>
+        </div>
+      )}
+
       {/* Conversation Area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto w-full px-3 sm:px-4 py-3 sm:py-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="max-w-3xl mx-auto w-full px-2 sm:px-6 py-4 sm:py-6">
           {showCenterPrompt ? (
-            <div className="flex flex-col items-center justify-center min-h-[50vh] sm:min-h-[60vh] text-center px-2">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold mb-2 sm:mb-3 text-foreground">
+            <div className="flex flex-col items-center justify-center min-h-[50vh] sm:min-h-[60vh] text-center px-4 sm:px-6 pt-16 sm:pt-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4 text-foreground">
                 What would you like to know?
               </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-8">
-                Choose a model and ask anything to get started.
+              <p className="text-sm sm:text-base text-muted-foreground mb-6 sm:mb-10 max-w-md">
+                Choose a model and ask anything.
               </p>
-              <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
+              <div className="flex flex-wrap justify-center gap-2 max-w-sm sm:max-w-2xl">
                 {STARTER_SUGGESTIONS.map((suggestion) => (
                   <Button
                     key={suggestion}
                     variant="outline"
                     size="sm"
-                    className="rounded-full"
+                    className="rounded-full text-xs py-2 px-3"
                     onClick={() => {
                       setInput(suggestion);
                       sendMessage(suggestion);
@@ -440,40 +451,42 @@ export default function ChatBox({
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-5 sm:space-y-6 pt-2">
               {messages.map((msg, i) => (
                 <div
                   key={i}
                   className={cn(
-                    "flex w-full",
+                    "flex w-full gap-3",
                     msg.role === "user" ? "justify-end" : "justify-start",
                   )}
                 >
                   <div
                     className={cn(
-                      "max-w-[95%] sm:max-w-[85%]",
+                      "max-w-full sm:max-w-[85%] overflow-hidden",
                       msg.role === "user"
-                        ? "bg-secondary rounded-2xl px-3 sm:px-4 py-2 sm:py-3"
+                        ? "bg-secondary rounded-2xl px-3 py-2 sm:px-4 sm:py-3 max-w-[85%]"
                         : "",
                     )}
                   >
                     {msg.role === "user" ? (
-                      <div>
-                        <p className="text-sm text-foreground">{msg.content}</p>
+                      <div className="overflow-hidden w-full">
+                        <p className="text-sm text-foreground leading-relaxed break-words">
+                          {msg.content}
+                        </p>
                         {msg.files && msg.files.length > 0 && (
-                          <div className="mt-2 flex flex-col gap-2">
+                          <div className="mt-2 flex flex-col gap-1.5">
                             {msg.files.map((file, idx) => {
                               const isImage = file.type.startsWith("image/");
                               const isPDF = file.type === "application/pdf";
                               return (
                                 <div
                                   key={idx}
-                                  className="flex items-center gap-2 rounded-lg bg-background/50 px-3 py-2 text-xs border border-border"
+                                  className="flex items-center gap-2 rounded-lg bg-background/50 px-2 py-1.5 text-xs border border-border min-w-0 max-w-full"
                                 >
-                                  <div className="flex h-8 w-8 items-center justify-center rounded bg-secondary">
+                                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-secondary">
                                     {isImage ? (
                                       <svg
-                                        className="h-4 w-4 text-muted-foreground"
+                                        className="h-3 w-3 text-muted-foreground"
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -487,7 +500,7 @@ export default function ChatBox({
                                       </svg>
                                     ) : isPDF ? (
                                       <svg
-                                        className="h-4 w-4 text-muted-foreground"
+                                        className="h-3 w-3 text-muted-foreground"
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -501,7 +514,7 @@ export default function ChatBox({
                                       </svg>
                                     ) : (
                                       <svg
-                                        className="h-4 w-4 text-muted-foreground"
+                                        className="h-3 w-3 text-muted-foreground"
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -515,11 +528,11 @@ export default function ChatBox({
                                       </svg>
                                     )}
                                   </div>
-                                  <div className="flex-1 overflow-hidden">
-                                    <p className="truncate font-medium text-foreground">
+                                  <div className="flex-1 min-w-0 overflow-hidden">
+                                    <p className="truncate text-xs font-medium text-foreground">
                                       {file.name}
                                     </p>
-                                    <p className="text-muted-foreground">
+                                    <p className="text-[10px] text-muted-foreground">
                                       {(file.size / 1024).toFixed(1)} KB
                                     </p>
                                   </div>
@@ -543,17 +556,17 @@ export default function ChatBox({
                         )}
                       </div>
                     ) : (
-                      <div>
-                        <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none">
+                      <div className="w-full overflow-hidden">
+                        <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:overflow-x-auto prose-pre:max-w-full prose-code:break-words">
                           <MemoizedMarkdown
                             content={msg.content}
                             id={`msg-${i}`}
                           />
                         </div>
                         {msg.sources && msg.sources.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
+                          <div className="mt-4 pt-3 border-t border-border text-xs sm:text-sm text-muted-foreground">
                             <p className="font-semibold mb-2">Sources:</p>
-                            <ul className="space-y-1">
+                            <ul className="space-y-1.5">
                               {msg.sources.map((source, idx) => (
                                 <li key={idx} className="truncate">
                                   • {source}
@@ -573,12 +586,12 @@ export default function ChatBox({
         </div>
       </div>
 
-      {/* Input Area - ChatGPT Style */}
-      <div className="border-t border-border bg-background px-2 sm:px-4 py-2 sm:py-4">
+      {/* Input Area */}
+      <div className="flex-shrink-0 border-t border-border bg-background px-3 sm:px-6 py-2 sm:py-3 pb-[max(env(safe-area-inset-bottom),8px)]">
         <div className="max-w-3xl mx-auto">
           {/* Attached Files Display */}
           {attachedFiles.length > 0 && (
-            <div className="mb-3">
+            <div className="mb-2">
               <div className="flex flex-wrap gap-2 mb-2">
                 {attachedFiles.map((file, idx) => {
                   const model = MODELS[selectedModel as keyof typeof MODELS];
@@ -592,7 +605,7 @@ export default function ChatBox({
                   return (
                     <div
                       key={idx}
-                      className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ${
+                      className={`flex items-center gap-2 rounded-full px-2 py-1 text-xs ${
                         isSupported
                           ? "bg-secondary"
                           : "bg-yellow-500/20 border border-yellow-500/50"
@@ -619,9 +632,9 @@ export default function ChatBox({
                 })}
               </div>
               {attachedFiles.length > 0 && (
-                <p className="text-xs text-muted-foreground mb-2">
-                  💡 Tip: Both Google and Perplexity models support images and
-                  PDFs. Groq models don&apos;t support file attachments.
+                <p className="text-xs sm:text-sm text-muted-foreground mb-3">
+                  💡 Google & Perplexity support images/PDFs. Groq doesn&apos;t
+                  support attachments.
                 </p>
               )}
             </div>
@@ -636,34 +649,34 @@ export default function ChatBox({
             accept="image/jpeg,image/png,image/gif,image/webp,.pdf,.doc,.docx,.txt"
           />
           {/* Input Box */}
-          <div className="rounded-3xl border border-border bg-secondary/30 dark:bg-zinc-800/50 overflow-hidden">
+          <div className="rounded-2xl sm:rounded-3xl border border-border bg-secondary/30 dark:bg-zinc-800/50 overflow-hidden">
             {/* Textarea */}
             <textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="What would you like to know?"
+              placeholder="Message..."
               disabled={isLoading}
               rows={1}
-              className="w-full resize-none bg-transparent px-3 sm:px-4 pt-3 sm:pt-4 pb-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 min-h-[50px] sm:min-h-[60px] max-h-[150px] sm:max-h-[200px]"
+              className="w-full resize-none bg-transparent px-3 sm:px-5 pt-3 sm:pt-4 pb-1 text-sm sm:text-base text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 min-h-[44px] sm:min-h-[56px] max-h-[120px] sm:max-h-[200px]"
               style={{ fieldSizing: "content" } as React.CSSProperties}
             />
 
             {/* Footer with tools */}
-            <div className="flex items-center justify-between px-2 sm:px-3 pb-2 sm:pb-3 gap-1">
+            <div className="flex items-center justify-between px-2 sm:px-4 pb-2 sm:pb-4 gap-1">
               {/* Left side tools */}
-              <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap">
+              <div className="flex items-center gap-0.5 sm:gap-1.5 overflow-x-auto">
                 {/* Plus button */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
+                      className="h-8 w-8 sm:h-10 sm:w-10 rounded-full hover:bg-accent flex-shrink-0"
                       suppressHydrationWarning
                     >
-                      <PlusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
@@ -685,7 +698,7 @@ export default function ChatBox({
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "h-7 w-7 sm:h-8 sm:w-8 rounded-full transition-colors",
+                    "h-8 w-8 sm:h-10 sm:w-10 rounded-full transition-colors hover:bg-accent flex-shrink-0",
                     isListening &&
                       "bg-red-500/20 text-red-500 hover:bg-red-500/30",
                   )}
@@ -701,9 +714,9 @@ export default function ChatBox({
                   suppressHydrationWarning
                 >
                   {isListening ? (
-                    <MicOffIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <MicOffIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                   ) : (
-                    <MicIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <MicIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                   )}
                 </Button>
 
@@ -711,17 +724,17 @@ export default function ChatBox({
                 {supportsSearch(selectedModel) && (
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     className={cn(
-                      "h-7 sm:h-8 rounded-full gap-1 sm:gap-1.5 px-2 sm:px-3 transition-colors",
+                      "h-8 w-8 sm:h-10 sm:w-auto sm:px-4 rounded-full transition-colors hover:bg-accent flex-shrink-0",
                       useSearch && "bg-blue-500/20 text-blue-500",
                     )}
                     onClick={() => setUseSearch(!useSearch)}
                     title={useSearch ? "Disable search" : "Enable search"}
                     suppressHydrationWarning
                   >
-                    <GlobeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span className="text-[10px] sm:text-xs hidden xs:inline">
+                    <GlobeIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="text-xs hidden sm:inline sm:ml-1.5">
                       Search
                     </span>
                   </Button>
@@ -730,12 +743,12 @@ export default function ChatBox({
                 {/* Model Selector */}
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
                   <SelectTrigger
-                    className="h-7 sm:h-8 w-auto border-none bg-transparent shadow-none hover:bg-accent rounded-full px-2 sm:px-3 gap-1"
+                    className="h-8 sm:h-10 w-auto border-none bg-transparent shadow-none hover:bg-accent rounded-full px-2 sm:px-4 gap-1 transition-colors flex-shrink-0"
                     suppressHydrationWarning
                   >
-                    <GlobeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <GlobeIcon className="h-4 w-4 sm:h-5 sm:w-5 hidden sm:block" />
                     <SelectValue>
-                      <span className="text-[10px] sm:text-xs max-w-[80px] sm:max-w-none truncate">
+                      <span className="text-[11px] sm:text-sm max-w-[60px] sm:max-w-none truncate">
                         {MODELS[selectedModel]?.name}
                       </span>
                     </SelectValue>
@@ -771,30 +784,30 @@ export default function ChatBox({
                   type="button"
                   size="icon"
                   variant="destructive"
-                  className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex-shrink-0"
+                  className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg flex-shrink-0"
                   onClick={stop}
                   title="Stop generation"
                   suppressHydrationWarning
                 >
-                  <StopCircleIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <StopCircleIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               ) : (
                 <Button
                   type="submit"
                   size="icon"
-                  className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-primary hover:bg-primary/90 flex-shrink-0"
+                  className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-primary hover:bg-primary/90 flex-shrink-0"
                   disabled={!input.trim()}
                   onClick={() => sendMessage(input)}
                   suppressHydrationWarning
                 >
-                  <CornerDownLeftIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <CornerDownLeftIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               )}
             </div>
           </div>
 
-          <p className="text-[10px] sm:text-[11px] text-muted-foreground text-center mt-2 sm:mt-3 px-2">
-            Query Mate AI can make mistakes. Consider checking important info.
+          <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-1.5 sm:mt-2">
+            QueryMate AI can make mistakes.
           </p>
         </div>
       </div>
