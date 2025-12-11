@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import ChatSidebar from "@/components/ChatSidebar";
 import ChatBox from "@/components/ChatBox";
 import { Button } from "@/components/ui/button";
-import { showToast } from "@/lib/toastify";
 
 const MenuIcon = ({ className = "w-6 h-6" }) => (
   <svg
@@ -18,65 +17,10 @@ const MenuIcon = ({ className = "w-6 h-6" }) => (
   </svg>
 );
 
-const CloseIcon = ({ className = "w-6 h-6" }) => (
-  <svg
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    viewBox="0 0 24 24"
-  >
-    <path
-      d="M18 6L6 18M6 6l12 12"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const LogoutIcon = ({ className = "w-5 h-5" }) => (
-  <svg
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    viewBox="0 0 24 24"
-  >
-    <path
-      d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const SparklesIcon = ({ className = "w-6 h-6" }) => (
-  <svg
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    viewBox="0 0 24 24"
-  >
-    <path
-      d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
 export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [convId, setConvId] = useState<string | null>(null);
   const [chatTitle, setChatTitle] = useState<string | null>(null);
-  const router = useRouter();
-
-  function handleLogout() {
-    localStorage.removeItem("token");
-    showToast("success", "Signed out successfully!");
-    router.push("/auth/login");
-  }
 
   return (
     <div className="h-screen w-screen flex bg-white dark:bg-gray-950 text-black dark:text-white overflow-hidden">
@@ -90,41 +34,19 @@ export default function ChatPage() {
         }}
       />
       <div className="flex-1 flex flex-col min-h-screen">
-        <header className="flex w-full items-center justify-between px-2 sm:px-4 py-2 sm:py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 relative z-40">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 sm:h-9 sm:w-9 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
-              onClick={() => setSidebarOpen((o) => !o)}
-              aria-label={sidebarOpen ? "Close Sidebar" : "Open Sidebar"}
-              suppressHydrationWarning
-            >
-              {sidebarOpen ? (
-                <CloseIcon className="w-5 h-5 text-black dark:text-white" />
-              ) : (
-                <MenuIcon className="w-5 h-5 text-black dark:text-white" />
-              )}
-            </Button>
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-black dark:bg-white flex items-center justify-center">
-                <SparklesIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white dark:text-black" />
-              </div>
-              <h1 className="text-base sm:text-lg font-semibold tracking-tight">
-                <span className="hidden xs:inline">QUERY MATE AI</span>
-                <span className="xs:hidden">QUERY MATE</span>
-              </h1>
-            </div>
-          </div>
+        {/* Fixed floating menu button - always visible */}
+        {!sidebarOpen && (
           <Button
-            className="ml-auto h-8 sm:h-9 px-2 sm:px-3 rounded-md bg-black dark:bg-white text-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-200"
-            onClick={handleLogout}
+            variant="ghost"
+            size="icon"
+            className="fixed top-4 left-4 z-20 h-10 w-10 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-md hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open Sidebar"
             suppressHydrationWarning
           >
-            <LogoutIcon className="w-4 h-4 sm:mr-1" />
-            <span className="hidden sm:inline">Logout</span>
+            <MenuIcon className="w-5 h-5 text-black dark:text-white" />
           </Button>
-        </header>
+        )}
 
         <div className="flex-1 h-0 flex flex-col">
           <ChatBox

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { showToast } from "@/lib/toastify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +34,14 @@ import {
   MoreVertical,
   Zap,
   Infinity,
+  Download,
+  Upload,
+  BarChart3,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  LogOut,
+  X,
 } from "lucide-react";
 
 type Conversation = {
@@ -90,6 +99,10 @@ export default function ChatSidebar({
     title: string;
   } | null>(null);
   const [editTitle, setEditTitle] = useState("");
+
+  const [profileExpanded, setProfileExpanded] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
 
   const { data: sessionData } = useSWR("/api/auth/sessions");
   const user = sessionData?.user;
@@ -178,6 +191,163 @@ export default function ChatSidebar({
     } catch (error) {
       console.error("Error deleting conversation:", error);
       alert("Failed to delete conversation");
+    }
+  };
+
+  const handleExport = async () => {
+    setExportLoading(true);
+    showToast("info", "Export started...");
+    try {
+      const response = await fetch("/api/conversations/export", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Export failed");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `querymate-export-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      showToast("success", "Export finished! File downloaded.");
+    } catch (error) {
+      console.error("Export error:", error);
+      showToast("error", "Failed to export conversations");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleImportClick = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      setImportLoading(true);
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        const response = await fetch("/api/conversations/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(data),
+        });
+        const result = await response.json();
+        if (response.ok) {
+          alert(result.message);
+          mutateChats();
+        } else {
+          throw new Error(result.error || "Import failed");
+        }
+      } catch (error) {
+        console.error("Import error:", error);
+        alert(
+          error instanceof Error
+            ? error.message
+            : "Failed to import conversations",
+        );
+      } finally {
+        setImportLoading(false);
+      }
+    };
+    input.click();
+  };
+
+  const handleExportPDF = async (conversationId: string, title: string) => {
+    showToast("info", "PDF export started...");
+    try {
+      const response = await fetch(
+        `/api/conversations/${conversationId}/export-pdf`,
+        {
+          credentials: "include",
+        },
+      );
+      if (!response.ok) throw new Error("Failed to fetch conversation data");
+      const data = await response.json();
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF();
+      doc.setFontSize(24);
+      doc.setFont("helvetica", "bold");
+      doc.text("QueryMate", 20, 20);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Exported: ${new Date().toLocaleDateString()}`, 20, 28);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      const wrappedTitle = doc.splitTextToSize(
+        data.conversation.title || "Untitled",
+        170,
+      );
+      doc.text(wrappedTitle, 20, 40);
+      let yPosition = 50;
+      const pageHeight = doc.internal.pageSize.height;
+      const margin = 20;
+      const maxWidth = 170;
+      for (const msg of data.messages) {
+        if (yPosition > pageHeight - 40) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        const roleText =
+          msg.role === "user"
+            ? "You"
+            : `Assistant${msg.model ? ` (${msg.model})` : ""}`;
+        doc.text(roleText, margin, yPosition);
+        yPosition += 7;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        let textContent = msg.content;
+        try {
+          const parsed = JSON.parse(msg.content);
+          if (parsed && typeof parsed.text === "string") {
+            textContent = parsed.text;
+            if (parsed.files && Array.isArray(parsed.files)) {
+              textContent +=
+                "\n[Attachments: " +
+                parsed.files.map((f: { name: string }) => f.name).join(", ") +
+                "]";
+            }
+          }
+        } catch {
+          // Not JSON, use as is
+        }
+        const wrappedContent = doc.splitTextToSize(textContent, maxWidth);
+        for (const line of wrappedContent) {
+          if (yPosition > pageHeight - 20) {
+            doc.addPage();
+            yPosition = 20;
+          }
+          doc.text(line, margin, yPosition);
+          yPosition += 5;
+        }
+        yPosition += 10;
+      }
+      const fileName = `${title.replace(/[^a-z0-9]/gi, "_")}-${Date.now()}.pdf`;
+      doc.save(fileName);
+      showToast("success", "PDF export finished! File downloaded.");
+    } catch (error) {
+      console.error("PDF export error:", error);
+      showToast("error", "Failed to export conversation as PDF");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/sign-out", {
+        method: "POST",
+        credentials: "include",
+      });
+      window.location.href = "/auth/login";
+    } catch (error) {
+      console.error("Logout error:", error);
+      alert("Failed to logout");
     }
   };
 
@@ -275,60 +445,26 @@ export default function ChatSidebar({
 
       {/* Sidebar */}
       <aside
-        className={`fixed z-30 left-0 top-[49px] sm:top-[57px] h-[calc(100%-49px)] sm:h-[calc(100%-57px)] w-[85vw] xs:w-72 md:w-80 transition-transform duration-300 ease-in-out bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col ${
+        className={`fixed z-30 left-0 top-0 h-screen w-[85vw] xs:w-72 md:w-80 transition-transform duration-300 ease-in-out bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col ${
           open
             ? "translate-x-0"
             : "-translate-x-[85vw] xs:-translate-x-72 md:-translate-x-80"
         }`}
       >
-        {/* User info */}
-        <div className="flex flex-col items-center py-4 border-b border-gray-200 dark:border-gray-800">
-          <div className="w-10 h-10 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center text-sm font-semibold mb-2">
-            {initial}
-          </div>
-          <div className="font-medium text-sm dark:text-white">
-            {user?.name ?? "User"}
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 px-4 text-center truncate max-w-full">
-            {user?.email ?? "email@example.com"}
-          </div>
-        </div>
-
-        {/* Token Usage Display */}
-        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 text-xs space-y-2">
-          {/* Gemini */}
-          {usage && (
-            <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
-              <div className="flex items-center gap-1">
-                <Zap className="w-3 h-3" />
-                <span>Google tokens</span>
-              </div>
-              <span className="font-mono">
-                {formatTokens(usage.gemini.tokensUsed)}/
-                {formatTokens(usage.gemini.tokensLimit)}
-              </span>
-            </div>
-          )}
-          {/* Perplexity */}
-          <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
-            <div className="flex items-center gap-1">
-              <Infinity className="w-3 h-3" />
-              <span>Perplexity</span>
-            </div>
-            <span className="font-mono text-green-600 dark:text-green-400">
-              Unlimited
-            </span>
-          </div>
-          {/* Groq */}
-          <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
-            <div className="flex items-center gap-1">
-              <Infinity className="w-3 h-3" />
-              <span>Groq</span>
-            </div>
-            <span className="font-mono text-green-600 dark:text-green-400">
-              Unlimited
-            </span>
-          </div>
+        {/* QueryMate Header */}
+        <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+          <h1 className="text-xl font-bold tracking-tight dark:text-white">
+            QueryMate
+          </h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+            onClick={() => setOpen(false)}
+            aria-label="Close Sidebar"
+          >
+            <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          </Button>
         </div>
 
         {/* New chat + search */}
@@ -361,7 +497,7 @@ export default function ChatSidebar({
         <nav className="flex-1 mt-4 mb-4 px-4 min-h-0 flex flex-col overflow-hidden">
           <div className="mb-2 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase flex items-center gap-1">
             <MessageSquare className="w-3 h-3" />
-            <span>Recent conversations</span>
+            <span>Chats</span>
           </div>
           <div className="flex-1 overflow-y-auto pr-1">
             <div className="flex flex-col gap-1">
@@ -416,6 +552,16 @@ export default function ChatSidebar({
                             <Edit className="w-3 h-3" />
                             <span>Edit</span>
                           </DropdownMenu.Item>
+                          <DropdownMenu.Item
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              handleExportPDF(chat.id, chatTitle);
+                            }}
+                            className="px-3 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200"
+                          >
+                            <FileText className="w-3 h-3" />
+                            <span>Export PDF</span>
+                          </DropdownMenu.Item>
                           <DropdownMenu.Separator className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
                           <DropdownMenu.Item
                             onSelect={(e) => {
@@ -441,6 +587,107 @@ export default function ChatSidebar({
             </div>
           </div>
         </nav>
+
+        {/* Profile Section at Bottom */}
+        <div className="border-t border-gray-200 dark:border-gray-800 mt-auto">
+          <button
+            onClick={() => setProfileExpanded(!profileExpanded)}
+            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+          >
+            <div className="w-9 h-9 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center text-sm font-semibold">
+              {initial}
+            </div>
+            <div className="flex-1 text-left">
+              <div className="font-medium text-sm dark:text-white">
+                {user?.name ?? "User"}
+              </div>
+            </div>
+            {profileExpanded ? (
+              <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            )}
+          </button>
+
+          {profileExpanded && (
+            <div className="px-3 pb-3 space-y-1 border-t border-gray-200 dark:border-gray-800">
+              {/* Token Usage Display */}
+              <div className="px-3 py-3 text-xs space-y-2">
+                {/* Gemini */}
+                {usage && (
+                  <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <Zap className="w-3 h-3" />
+                      <span>Google tokens</span>
+                    </div>
+                    <span className="font-mono">
+                      {formatTokens(usage.gemini.tokensUsed)}/
+                      {formatTokens(usage.gemini.tokensLimit)}
+                    </span>
+                  </div>
+                )}
+                {/* Perplexity */}
+                <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center gap-1">
+                    <Infinity className="w-3 h-3" />
+                    <span>Perplexity</span>
+                  </div>
+                  <span className="font-mono text-green-600 dark:text-green-400">
+                    Unlimited
+                  </span>
+                </div>
+                {/* Groq */}
+                <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center gap-1">
+                    <Infinity className="w-3 h-3" />
+                    <span>Groq</span>
+                  </div>
+                  <span className="font-mono text-green-600 dark:text-green-400">
+                    Unlimited
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <button
+                onClick={handleExport}
+                disabled={exportLoading}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="w-4 h-4" />
+                <span>
+                  {exportLoading ? "Exporting..." : "Export conversations"}
+                </span>
+              </button>
+              <button
+                onClick={handleImportClick}
+                disabled={importLoading}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Upload className="w-4 h-4" />
+                <span>
+                  {importLoading ? "Importing..." : "Import conversations"}
+                </span>
+              </button>
+              <button
+                onClick={() => {
+                  window.location.href = "/analytics";
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>Analytics</span>
+              </button>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign out</span>
+              </button>
+            </div>
+          )}
+        </div>
       </aside>
     </>
   );

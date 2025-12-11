@@ -79,7 +79,7 @@ export const MODELS: Record<string, ModelConfig> = {
       tpm: 12000,
       tpd: 100000,
     },
-    supportsTokenUsage: true,
+    supportsTokenUsage: false,
   },
   "llama-3.1-8b": {
     id: "llama-3.1-8b",
@@ -93,7 +93,7 @@ export const MODELS: Record<string, ModelConfig> = {
       tpm: 6000,
       tpd: 500000,
     },
-    supportsTokenUsage: true,
+    supportsTokenUsage: false,
   },
   "llama-4-scout": {
     id: "llama-4-scout",
@@ -107,7 +107,7 @@ export const MODELS: Record<string, ModelConfig> = {
       tpm: 30000,
       tpd: 500000,
     },
-    supportsTokenUsage: true,
+    supportsTokenUsage: false,
   },
   "llama-4-maverick": {
     id: "llama-4-maverick",
@@ -121,7 +121,7 @@ export const MODELS: Record<string, ModelConfig> = {
       tpm: 6000,
       tpd: 500000,
     },
-    supportsTokenUsage: true,
+    supportsTokenUsage: false,
   },
   "qwen3-32b": {
     id: "qwen3-32b",
@@ -135,7 +135,7 @@ export const MODELS: Record<string, ModelConfig> = {
       tpm: 6000,
       tpd: 500000,
     },
-    supportsTokenUsage: true,
+    supportsTokenUsage: false,
   },
   "kimi-k2": {
     id: "kimi-k2",
@@ -149,7 +149,7 @@ export const MODELS: Record<string, ModelConfig> = {
       tpm: 10000,
       tpd: 300000,
     },
-    supportsTokenUsage: true,
+    supportsTokenUsage: false,
   },
 };
 
