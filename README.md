@@ -397,18 +397,18 @@ Content-Type: application/json
 
 **Available Models:**
 
-| Provider | Model ID | Description |
-|----------|----------|-------------|
-| Google | `gemini-2.5-flash` | Fast and efficient |
-| Google | `gemini-2.5-flash-lite` | Ultra fast, cost-efficient |
-| Perplexity | `sonar` | Web-connected AI search |
-| Perplexity | `sonar-pro` | Advanced web-connected AI |
-| Groq | `llama-3.3-70b` | Versatile large model |
-| Groq | `llama-3.1-8b` | Fast instant responses |
-| Groq | `llama-4-scout` | Latest Llama 4 model |
-| Groq | `llama-4-maverick` | Extended context Llama 4 |
-| Groq | `qwen3-32b` | Alibaba's Qwen model |
-| Groq | `kimi-k2` | Moonshot AI model |
+| Provider   | Model ID                | Description                |
+| ---------- | ----------------------- | -------------------------- |
+| Google     | `gemini-2.5-flash`      | Fast and efficient         |
+| Google     | `gemini-2.5-flash-lite` | Ultra fast, cost-efficient |
+| Perplexity | `sonar`                 | Web-connected AI search    |
+| Perplexity | `sonar-pro`             | Advanced web-connected AI  |
+| Groq       | `llama-3.3-70b`         | Versatile large model      |
+| Groq       | `llama-3.1-8b`          | Fast instant responses     |
+| Groq       | `llama-4-scout`         | Latest Llama 4 model       |
+| Groq       | `llama-4-maverick`      | Extended context Llama 4   |
+| Groq       | `qwen3-32b`             | Alibaba's Qwen model       |
+| Groq       | `kimi-k2`               | Moonshot AI model          |
 
 **Response:** Streaming text response from AI (Server-Sent Events)
 
@@ -429,7 +429,7 @@ QueryMate supports three AI providers with 10+ models:
    - Supports file uploads
    - Models: `sonar`, `sonar-pro`
 
-3. **Groq** 
+3. **Groq**
    - Lightning-fast inference (fastest in the world!)
    - Multiple open-source models
    - Models: `llama-3.3-70b`, `llama-3.1-8b`, `llama-4-scout`, `llama-4-maverick`, `qwen3-32b`, `kimi-k2`
@@ -484,15 +484,15 @@ All AI responses use Server-Sent Events (SSE) for real-time streaming:
 
 ## � API Rate Limits
 
-| Provider | Model | RPM | RPD | TPM |
-|----------|-------|-----|-----|-----|
-| Google | Gemini 2.5 Flash | 5 | 20 | 250K |
-| Google | Gemini 2.5 Flash Lite | 10 | 20 | 250K |
-| Groq | Llama 3.3 70B | 30 | 1000 | 12K |
-| Groq | Llama 3.1 8B | 30 | 14400 | 6K |
-| Groq | Llama 4 Scout | 30 | 1000 | 30K |
-| Groq | Qwen 3 32B | 60 | 1000 | 6K |
-| Perplexity | Sonar/Pro | Pay-per-use | - | - |
+| Provider   | Model                 | RPM         | RPD   | TPM  |
+| ---------- | --------------------- | ----------- | ----- | ---- |
+| Google     | Gemini 2.5 Flash      | 5           | 20    | 250K |
+| Google     | Gemini 2.5 Flash Lite | 10          | 20    | 250K |
+| Groq       | Llama 3.3 70B         | 30          | 1000  | 12K  |
+| Groq       | Llama 3.1 8B          | 30          | 14400 | 6K   |
+| Groq       | Llama 4 Scout         | 30          | 1000  | 30K  |
+| Groq       | Qwen 3 32B            | 60          | 1000  | 6K   |
+| Perplexity | Sonar/Pro             | Pay-per-use | -     | -    |
 
 ## �🗂️ Database Schema
 
@@ -590,16 +590,19 @@ messages
 ### Environment Variables for Production
 
 **Required:**
+
 - `SUPABASE_DB_URL`: PostgreSQL connection string
 - `BETTER_AUTH_SECRET`: Secure random string (min 32 chars)
 - `BETTER_AUTH_URL`: Your production domain
 
 **AI Providers (at least one):**
+
 - `GOOGLE_GENERATIVE_AI_API_KEY`: For Gemini
 - `PERPLEXITY_API_KEY`: For Perplexity
 - `GROQ_API_KEY`: For Groq
 
 **Optional (OAuth):**
+
 - `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET`
 - `GITHUB_CLIENT_ID` & `GITHUB_CLIENT_SECRET`
 
