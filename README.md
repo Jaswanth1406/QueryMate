@@ -1,23 +1,25 @@
 # QueryMate 🤖
 
-A modern, powerful AI chat application that lets you interact with multiple AI providers in one place. Built with Next.js 15, featuring real-time streaming responses, secure authentication, and a beautiful UI.
+A modern, powerful AI chat application that lets you interact with multiple AI providers in one place. Built with Next.js 15, featuring real-time streaming responses, voice input, file attachments, and a beautiful mobile-responsive UI.
 
 ## ✨ Key Features
 
-### 🎯 Multi-AI Provider Support
+### 🎯 Multi-AI Provider Support (10+ Models)
 
-- **Google Gemini**: Fast and intelligent responses
-- **Perplexity AI**: Real-time web search and citations
-- **Amazon Bedrock**: Enterprise-grade Claude models
+- **Google Gemini**: Gemini 2.5 Flash & Flash Lite - Fast and intelligent with web search
+- **Perplexity AI**: Sonar & Sonar Pro - Real-time web search with citations
+- **Groq**: Lightning-fast inference with Llama 3.3 70B, Llama 3.1 8B, Llama 4 Scout, Llama 4 Maverick, Qwen 3 32B, and Kimi K2
 - Switch between AI models seamlessly within conversations
 
 ### 💬 Advanced Chat Features
 
 - Real-time streaming responses with elegant typing indicators
-- Markdown support for rich text formatting (code blocks, lists, headings)
+- **🎤 Voice Input**: Speech-to-text for hands-free messaging
+- **📎 File Attachments**: Upload images and PDFs (Gemini & Perplexity)
+- **🔍 Web Search Toggle**: Enable/disable web search for Gemini models
+- Markdown support with syntax-highlighted code blocks
 - Conversation history with persistent storage
 - Auto-generated conversation titles using AI
-- Message history with timestamps
 
 ### 🔐 Secure Authentication
 
@@ -28,10 +30,11 @@ A modern, powerful AI chat application that lets you interact with multiple AI p
 
 ### 🎨 Modern UI/UX
 
-- Beautiful gradient designs with smooth animations
-- Responsive layout for desktop and mobile
-- Sidebar for conversation management
-- Scroll-to-bottom on new messages
+- **Claude-style sidebar** with QueryMate branding
+- Beautiful dark/light mode support
+- **Fully mobile-responsive design**
+- Collapsible user profile section
+- Toast notifications for all actions
 - Loading states and error handling
 
 ### 📱 Conversation Management
@@ -39,8 +42,11 @@ A modern, powerful AI chat application that lets you interact with multiple AI p
 - Create unlimited conversations
 - Update conversation titles
 - Delete conversations with cascade message deletion
-- Load chat history instantly
-- Sidebar navigation between chats
+- **📤 Export all conversations** (JSON format)
+- **📥 Import conversations** from backup
+- **📄 Export to PDF** per conversation
+- **📊 Analytics Dashboard** with usage statistics
+- Search/filter conversations
 
 ## 🚀 Tech Stack
 
@@ -52,20 +58,23 @@ A modern, powerful AI chat application that lets you interact with multiple AI p
 - **AI Providers**:
   - Google Gemini (via @ai-sdk/google)
   - Perplexity AI (via @ai-sdk/perplexity)
-  - Amazon Bedrock (via @ai-sdk/amazon-bedrock)
+  - Groq (via @ai-sdk/groq)
 - **AI SDK**: Vercel AI SDK
-- **UI Components**: Radix UI
+- **UI Components**: Radix UI, Shadcn/ui
 - **Styling**: Tailwind CSS
-- **Markdown**: react-markdown
+- **Markdown**: react-markdown with Shiki syntax highlighting
+- **PDF Export**: jsPDF
+- **Data Fetching**: SWR
 
 ## 🎯 What Makes QueryMate Special?
 
-1. **Multiple AI Models in One Place**: Switch between Google Gemini, Perplexity, and Amazon Bedrock without leaving your conversation
-2. **Real-time Streaming**: See AI responses as they're generated, not after completion
-3. **Smart Context Management**: AI remembers your entire conversation history
-4. **Beautiful UI**: Carefully crafted interface with smooth animations and gradients
-5. **Fully Featured API**: Build your own frontend or integrate with existing apps
-6. **Type-Safe**: Built with TypeScript for reliable, maintainable code
+1. **10+ AI Models in One Place**: Switch between Google Gemini, Perplexity, and Groq models instantly
+2. **Real-time Streaming**: See AI responses as they're generated
+3. **Voice Input**: Speak your messages with built-in speech recognition
+4. **File Support**: Upload images and PDFs for AI analysis
+5. **Export Everything**: JSON export, PDF export, and import functionality
+6. **Mobile-First Design**: Fully responsive with optimized mobile layouts
+7. **Type-Safe**: Built with TypeScript for reliable code
 
 ## 🛠️ Installation
 
@@ -97,35 +106,30 @@ Create `.env.local` file in the project root:
 
 ```env
 # --- SUPABASE ---
-SUPABASE_DB_URL=xxxx
-NEXT_PUBLIC_SUPABASE_URL=xxxx
-SUPABASE_SERVICE_ROLE_KEY=xxxx
+SUPABASE_DB_URL=your_supabase_db_url
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 # --- BETTER AUTH ---
-BETTER_AUTH_SECRET=xxxx
+BETTER_AUTH_SECRET=your_secret_key_min_32_chars
+BETTER_AUTH_URL=http://localhost:3000
 
 # --- GOOGLE OAUTH ---
-GOOGLE_CLIENT_ID=xxxx
-GOOGLE_CLIENT_SECRET=xxxx
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 
 # --- GITHUB OAUTH ---
-GITHUB_CLIENT_ID=xxxx
-GITHUB_CLIENT_SECRET=xxxx
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
 
 # --- GOOGLE GEMINI ---
-GOOGLE_API_KEY=your_google_gemini_api_key
-GEMINI_MODEL=gemini-2.0-flash-exp
+GOOGLE_GENERATIVE_AI_API_KEY=your_google_ai_api_key
 
 # --- PERPLEXITY AI ---
 PERPLEXITY_API_KEY=your_perplexity_api_key
-PERPLEXITY_MODEL=llama-3.1-sonar-large-128k-online
 
-# --- AWS BEDROCK ---
-AWS_ACCESS_KEY_ID=your_aws_access_key
-AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-AWS_REGION=us-east-1
-BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20240620-v1:0
-
+# --- GROQ ---
+GROQ_API_KEY=your_groq_api_key
 ```
 
 4. **Push database schema**
@@ -379,86 +383,75 @@ Content-Type: application/json
 {
   "message": "What is machine learning?",
   "conversationId": "conv_789",
-  "model": "gemini",
-  "title": "ML Discussion"
+  "model": "gemini-2.5-flash",
+  "useSearch": true
 }
 ```
 
 **Parameters:**
 
 - `message` (required): The user's message text
-- `model` (optional, default: "gemini"): AI model to use ("gemini", "perplexity", or "bedrock")
-- `conversationId` (optional): ID of existing conversation. If omitted, creates new conversation
-- `title` (optional): Title for new conversation (only used when conversationId not provided)
+- `model` (required): AI model ID (see table below)
+- `conversationId` (optional): ID of existing conversation
+- `useSearch` (optional): Enable web search for Gemini models
+
+**Available Models:**
+
+| Provider | Model ID | Description |
+|----------|----------|-------------|
+| Google | `gemini-2.5-flash` | Fast and efficient |
+| Google | `gemini-2.5-flash-lite` | Ultra fast, cost-efficient |
+| Perplexity | `sonar` | Web-connected AI search |
+| Perplexity | `sonar-pro` | Advanced web-connected AI |
+| Groq | `llama-3.3-70b` | Versatile large model |
+| Groq | `llama-3.1-8b` | Fast instant responses |
+| Groq | `llama-4-scout` | Latest Llama 4 model |
+| Groq | `llama-4-maverick` | Extended context Llama 4 |
+| Groq | `qwen3-32b` | Alibaba's Qwen model |
+| Groq | `kimi-k2` | Moonshot AI model |
 
 **Response:** Streaming text response from AI (Server-Sent Events)
-
-**Example with different AI models:**
-
-```javascript
-// Use Google Gemini
-fetch("/api/chat", {
-  method: "POST",
-  headers: {
-    Authorization: "Bearer YOUR_TOKEN",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    message: "Explain quantum computing",
-    model: "gemini",
-  }),
-});
-
-// Use Perplexity (with real-time web search)
-fetch("/api/chat", {
-  method: "POST",
-  headers: {
-    Authorization: "Bearer YOUR_TOKEN",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    message: "What's the latest news on AI?",
-    model: "perplexity",
-  }),
-});
-
-// Use Amazon Bedrock (Claude)
-fetch("/api/chat", {
-  method: "POST",
-  headers: {
-    Authorization: "Bearer YOUR_TOKEN",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    message: "Write a poem about technology",
-    model: "bedrock",
-  }),
-});
-```
-
-> **Note**: The `/api/chat` endpoint returns streaming responses. For testing in Postman, you'll see status 200 but the response body streams over time. Check the database `messages` table to verify AI responses are saved.
 
 ## 🔑 Key Concepts
 
 ### Multi-AI Architecture
 
-QueryMate supports three AI providers, each with unique strengths:
+QueryMate supports three AI providers with 10+ models:
 
-1. **Google Gemini** (`gemini`)
-   - Fast, general-purpose AI
-   - Great for coding, explanations, creative writing
-   - Model: `gemini-2.0-flash-exp`
+1. **Google Gemini**
+   - Fast, general-purpose AI with web search
+   - Supports file uploads (images, PDFs)
+   - Token usage tracking
+   - Models: `gemini-2.5-flash`, `gemini-2.5-flash-lite`
 
-2. **Perplexity AI** (`perplexity`)
-   - Real-time web search capabilities
-   - Provides citations and sources
-   - Perfect for current events and research
-   - Model: `llama-3.1-sonar-large-128k-online`
+2. **Perplexity AI**
+   - Real-time web search with citations
+   - Supports file uploads
+   - Models: `sonar`, `sonar-pro`
 
-3. **Amazon Bedrock** (`bedrock`)
-   - Enterprise-grade Claude models
-   - Advanced reasoning and analysis
-   - Model: `anthropic.claude-3-5-sonnet-20240620-v1:0`
+3. **Groq** 
+   - Lightning-fast inference (fastest in the world!)
+   - Multiple open-source models
+   - Models: `llama-3.3-70b`, `llama-3.1-8b`, `llama-4-scout`, `llama-4-maverick`, `qwen3-32b`, `kimi-k2`
+
+### Voice Input
+
+- Click the microphone button to start voice input
+- Speech is transcribed in real-time
+- Works on Chrome, Edge, and Safari
+
+### File Attachments
+
+- Click the + button → "Add File"
+- Supported: Images (JPEG, PNG, GIF, WebP), PDFs
+- Works with Gemini and Perplexity models
+- Groq models do not support attachments
+
+### Export/Import Features
+
+- **Export All**: Download all conversations as JSON backup
+- **Import**: Restore conversations from JSON backup
+- **PDF Export**: Export individual chats as formatted PDFs
 
 ### Conversation vs Chat
 
@@ -489,7 +482,19 @@ All AI responses use Server-Sent Events (SSE) for real-time streaming:
 - Better user experience with immediate feedback
 - More efficient than waiting for complete responses
 
-## 🗂️ Database Schema
+## � API Rate Limits
+
+| Provider | Model | RPM | RPD | TPM |
+|----------|-------|-----|-----|-----|
+| Google | Gemini 2.5 Flash | 5 | 20 | 250K |
+| Google | Gemini 2.5 Flash Lite | 10 | 20 | 250K |
+| Groq | Llama 3.3 70B | 30 | 1000 | 12K |
+| Groq | Llama 3.1 8B | 30 | 14400 | 6K |
+| Groq | Llama 4 Scout | 30 | 1000 | 30K |
+| Groq | Qwen 3 32B | 60 | 1000 | 6K |
+| Perplexity | Sonar/Pro | Pay-per-use | - | - |
+
+## �🗂️ Database Schema
 
 ```
 user
@@ -584,259 +589,48 @@ messages
 
 ### Environment Variables for Production
 
-Ensure these are set in your hosting platform (Vercel, Railway, Render, etc.):
-
 **Required:**
+- `SUPABASE_DB_URL`: PostgreSQL connection string
+- `BETTER_AUTH_SECRET`: Secure random string (min 32 chars)
+- `BETTER_AUTH_URL`: Your production domain
 
-- `SUPABASE_DB_URL`: Your production PostgreSQL connection string
-- `BETTER_AUTH_SECRET`: Secure random string (min 32 characters)
-- `BETTER_AUTH_URL`: Your production domain (e.g., https://querymate.com)
+**AI Providers (at least one):**
+- `GOOGLE_GENERATIVE_AI_API_KEY`: For Gemini
+- `PERPLEXITY_API_KEY`: For Perplexity
+- `GROQ_API_KEY`: For Groq
 
-**AI Providers (at least one required):**
-
-- `GOOGLE_API_KEY` & `GEMINI_MODEL`: For Google Gemini
-- `PERPLEXITY_API_KEY` & `PERPLEXITY_MODEL`: For Perplexity AI
-- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `BEDROCK_MODEL_ID`: For Amazon Bedrock
-
-**Optional (for OAuth):**
-
-- `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET`: For Google Sign-In
-- `GITHUB_CLIENT_ID` & `GITHUB_CLIENT_SECRET`: For GitHub Sign-In
+**Optional (OAuth):**
+- `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET`
+- `GITHUB_CLIENT_ID` & `GITHUB_CLIENT_SECRET`
 
 ### Deploy on Vercel
 
-## 🎯 Use Cases
-
-- **Developers**: Get coding help from Gemini, research docs with Perplexity
-- **Researchers**: Access real-time information with citations via Perplexity
-- **Writers**: Generate content with Claude (Bedrock) or Gemini
-- **Students**: Learn and get explanations from multiple AI perspectives
-- **Professionals**: Compare AI responses for better decision-making
-
-### Deploy on Vercel
-
-1. **Fork or Clone the Repository**
-2. **Import to Vercel**
-   - Add all environment variables
-   - Deploy!
-
-3. **Post-Deployment**
-
-   ```bash
-   # Run database migrations
-   npx drizzle-kit push
-   ```
-
-Or use Vercel CLI:
-
-```bash
-npm run build
-vercel deploy --prod
-```
-
-### Performance Optimization
-
-- ✅ Streaming responses for instant feedback
-- ✅ Optimized database queries with indexes
-- ✅ JWT token caching
-- ✅ Static generation for auth pages
-- ✅ Lazy loading components
-
-## 🔧 Development Tips
-
-### Testing Different AI Models
-
-```bash
-# Set different models in .env.local for testing
-GEMINI_MODEL=gemini-2.0-flash-exp          # Fast, great for development
-PERPLEXITY_MODEL=llama-3.1-sonar-large-128k-online  # Real-time search
-BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20240620-v1:0  # Advanced reasoning
-```
-
-### Database Management
-
-```bash
-# Generate migrations
-npx drizzle-kit generate
-
-# Push schema to database
-npx drizzle-kit push
-
-# Open Drizzle Studio (database GUI)
-npx drizzle-kit studio
-```
-
-### Common Issues
-
-**Issue**: "Invalid model" error
-
-- **Solution**: Check that `GEMINI_MODEL`, `PERPLEXITY_MODEL`, or `BEDROCK_MODEL_ID` environment variables are set correctly
-
-**Issue**: Streaming not working in Postman
-
-- **Solution**: This is expected. Use the web UI or check database `messages` table to verify responses
-
-**Issue**: Authentication errors
-
-- **Solution**: Ensure `BETTER_AUTH_SECRET` is set and token is included in Authorization header
-
-## 📊 API Rate Limits
-
-Be aware of rate limits for each AI provider:
-
-| Provider       | Free Tier   | Rate Limit           |
-| -------------- | ----------- | -------------------- |
-| Google Gemini  | 15 RPM      | 1,500 requests/day   |
-| Perplexity     | 5 credits   | 5 requests/5 minutes |
-| Amazon Bedrock | Pay-per-use | Based on AWS limits  |
-
-## 🎨 Customization
-
-### Adding New AI Models
-
-1. Create provider file in `app/lib/ai-[provider].ts`
-2. Add model option in `ChatBox.tsx` Select component
-3. Update `route.ts` in `/api/chat` to handle new model
-4. Add environment variables
-
-### Styling
-
-The app uses Tailwind CSS with custom configurations:
-
-- Gradients: `from-purple-600 to-fuchsia-500`
-- Animations: `slideInLeft`, `slideInRight`
-- Components: Radix UI primitives
-
-## 🏗️ Project Structure
-
-```
-QueryMate/
-├── app/
-│   ├── api/                      # API Routes
-│   │   ├── auth/                 # Authentication endpoints
-│   │   │   ├── [...all]/route.ts    # Better Auth handler
-│   │   │   └── sessions/route.ts    # Session management
-│   │   ├── chat/route.ts         # Main chat endpoint (AI streaming)
-│   │   ├── conversations/route.ts # CRUD for conversations
-│   │   └── messages/route.ts     # Message history
-│   │
-│   ├── components/               # React Components
-│   │   ├── ChatBox.tsx          # Main chat interface with streaming
-│   │   ├── ChatSidebar.tsx      # Conversation list sidebar
-│   │   ├── AuthLoginForm.tsx    # Login form
-│   │   ├── AuthSignupForm.tsx   # Signup form
-│   │   └── ui/                  # Reusable UI components
-│   │
-│   ├── lib/                      # Utilities & Config
-│   │   ├── ai-gemini.ts         # Google Gemini setup
-│   │   ├── ai-perplexity.ts     # Perplexity AI setup
-│   │   ├── ai-bedrock.ts        # Amazon Bedrock setup
-│   │   ├── auth.ts              # Better Auth server config
-│   │   ├── auth-middleware.ts   # JWT validation middleware
-│   │   ├── better-auth-client.ts # Auth client hooks
-│   │   ├── schema.ts            # Drizzle ORM schema
-│   │   ├── lib.ts               # Database connection
-│   │   └── utils.ts             # Helper functions
-│   │
-│   ├── auth/                     # Auth pages
-│   │   ├── login/page.tsx
-│   │   └── signup/page.tsx
-│   │
-│   ├── chat/page.tsx            # Main chat page
-│   ├── layout.tsx               # Root layout
-│   ├── page.tsx                 # Home page
-│   └── globals.css              # Global styles
-│
-├── drizzle.config.ts            # Drizzle ORM configuration
-├── next.config.ts               # Next.js configuration
-├── tailwind.config.js           # Tailwind CSS configuration
-├── tsconfig.json                # TypeScript configuration
-└── package.json                 # Dependencies
-```
-
-## 🔒 Security Features
-
-### Authentication & Authorization
-
-- **JWT Tokens**: Secure, stateless authentication
-- **Password Hashing**: bcrypt for secure password storage
-- **Session Management**: Automatic token expiration and refresh
-- **Protected Routes**: Middleware validates all API requests
-
-### API Security
-
-- **CORS Protection**: Configured for specific origins
-- **Rate Limiting**: Prevent abuse (implement with middleware)
-- **Input Validation**: All user inputs are validated
-- **SQL Injection Prevention**: Drizzle ORM parameterized queries
-
-### Data Protection
-
-- **User Isolation**: Users can only access their own data
-- **Cascade Deletion**: Deleting conversations removes associated messages
-- **Environment Variables**: Sensitive keys stored securely
-
-## 📊 Database Relationships
-
-```mermaid
-erDiagram
-    USER ||--o{ SESSION : has
-    USER ||--o{ CONVERSATION : creates
-    CONVERSATION ||--o{ MESSAGE : contains
-
-    USER {
-        string id PK
-        string email UK
-        string name
-        string passwordHash
-        boolean emailVerified
-        timestamp createdAt
-        timestamp updatedAt
-    }
-
-    SESSION {
-        string id PK
-        string userId FK
-        string token UK
-        timestamp expiresAt
-        json metadata
-    }
-
-    CONVERSATION {
-        string id PK
-        string userId FK
-        string title
-        timestamp createdAt
-        timestamp updatedAt
-    }
-
-    MESSAGE {
-        string id PK
-        string conversationId FK
-        string role
-        text content
-        timestamp createdAt
-    }
-```
+1. Fork/Clone the repository
+2. Import to Vercel, add environment variables
+3. Deploy!
+4. Run `npx drizzle-kit push` for database
 
 ## 🎯 Use Cases
 
-- **Developers**: Get coding help from Gemini, research docs with Perplexity
-- **Researchers**: Access real-time information with citations via Perplexity
-- **Writers**: Generate content with Claude (Bedrock) or Gemini
-- **Students**: Learn and get explanations from multiple AI perspectives
-- **Professionals**: Compare AI responses for better decision-making
+- **Developers**: Get coding help, compare AI responses
+- **Researchers**: Real-time web search with Perplexity citations
+- **Students**: Learn from multiple AI perspectives
+- **Writers**: Generate content with different models
+- **Everyone**: Fast answers with Groq's lightning inference
 
 ## 🌟 Roadmap
 
-- [ ] Voice input support
-- [ ] File upload and analysis
-- [ ] Export conversations to PDF/Markdown
+- [x] Voice input support
+- [x] File upload and analysis
+- [x] Export conversations to PDF
+- [x] Export/Import conversations (JSON)
+- [x] Analytics dashboard
+- [x] Mobile-responsive design
+- [x] Groq integration (10+ models)
 - [ ] Shared conversations with public links
-- [ ] Custom AI model parameters (temperature, max tokens)
-- [ ] Mobile app (React Native)
-- [ ] Claude 4 and GPT-4 integration
+- [ ] Custom AI parameters (temperature, max tokens)
 - [ ] Team workspaces
+- [ ] Plugin system
 
 ## 📝 License
 
@@ -872,8 +666,10 @@ npm run dev
 - [Vercel AI SDK](https://sdk.vercel.ai) for seamless AI integration
 - [Better Auth](https://better-auth.com) for robust authentication
 - [Drizzle ORM](https://orm.drizzle.team) for type-safe database queries
-- [Radix UI](https://radix-ui.com) for accessible components
-- [Tailwind CSS](https://tailwindcss.com) for beautiful styling
+- [Radix UI](https://radix-ui.com) & [Shadcn/ui](https://ui.shadcn.com) for components
+- [Tailwind CSS](https://tailwindcss.com) for styling
+- [jsPDF](https://github.com/parallax/jsPDF) for PDF generation
+- [Shiki](https://shiki.style) for syntax highlighting
 
 ---
 
