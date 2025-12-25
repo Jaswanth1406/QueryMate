@@ -116,18 +116,6 @@ export default function AuthLoginForm() {
           {showPass ? <EyeOpenIcon /> : <EyeClosedIcon />}
         </button>
       </div>
-      <div className="flex justify-between items-center mb-4 dark:text-gray-300">
-        <label className="flex items-center gap-2">
-          <input type="checkbox" className="dark:bg-gray-700" />
-          Remember me
-        </label>
-        <a
-          href="#"
-          className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"
-        >
-          Forgot password?
-        </a>
-      </div>
       {error && (
         <div
           className="text-red-500 dark:text-red-400 mb-2"
