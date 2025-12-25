@@ -2,6 +2,8 @@
 
 A modern, powerful AI chat application that lets you interact with multiple AI providers in one place. Built with Next.js 15, featuring real-time streaming responses, voice input, file attachments, and a beautiful mobile-responsive UI.
 
+![QueryMate UI](public/Querymate_UI.png)
+
 ## ✨ Key Features
 
 ### 🎯 Multi-AI Provider Support (10+ Models)
