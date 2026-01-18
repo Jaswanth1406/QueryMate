@@ -664,7 +664,6 @@ npm run dev
 
 - **GitHub**: [@Jaswanth1406](https://github.com/Jaswanth1406)
 - **Issues**: [Report bugs or request features](https://github.com/Jaswanth1406/QueryMate/issues)
-- **Discussions**: [Join the conversation](https://github.com/Jaswanth1406/QueryMate/discussions)
 
 ## 🙏 Acknowledgments
 
