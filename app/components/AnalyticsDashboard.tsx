@@ -293,33 +293,35 @@ export default function AnalyticsDashboard() {
             <Clock className="w-5 h-5" />
             Messages by Hour (24h)
           </h2>
-          <div className="flex items-end justify-between gap-1 h-48">
-            {analytics.timeAnalytics.messagesByHour.map((count, hour) => {
-              const maxCount = Math.max(
-                ...analytics.timeAnalytics.messagesByHour,
-              );
-              const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
-              return (
-                <div
-                  key={hour}
-                  className="flex-1 flex flex-col items-center gap-1"
-                  title={`${hour}:00 - ${count} messages`}
-                >
-                  <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-t relative flex-1 flex items-end">
+          {(() => {
+            const maxCount = Math.max(...analytics.timeAnalytics.messagesByHour, 1);
+            return (
+              <div className="flex items-end gap-1 h-48">
+                {analytics.timeAnalytics.messagesByHour.map((count, hour) => {
+                  const heightPercent = (count / maxCount) * 100;
+                  return (
                     <div
-                      className="w-full bg-blue-500 rounded-t transition-all"
-                      style={{ height: `${height}%` }}
-                    />
-                  </div>
-                  {hour % 3 === 0 && (
-                    <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                      {hour}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                      key={hour}
+                      className="flex-1 flex flex-col items-center h-full"
+                      title={`${hour}:00 - ${count} messages`}
+                    >
+                      <div className="w-full flex-1 flex items-end">
+                        <div
+                          className="w-full bg-blue-500 rounded-t transition-all min-h-[2px]"
+                          style={{ height: count > 0 ? `${Math.max(heightPercent, 5)}%` : '2px' }}
+                        />
+                      </div>
+                      {hour % 3 === 0 && (
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
+                          {hour}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </Card>
 
         {/* Recent Conversations */}
