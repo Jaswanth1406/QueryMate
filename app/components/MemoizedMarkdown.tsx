@@ -4,15 +4,16 @@ import { marked } from "marked";
 import { memo, useMemo, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { CopyIcon, CheckIcon } from "lucide-react";
+import { CopyIcon, CheckIcon, EyeIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCanvas } from "./CanvasContext";
 
 function parseMarkdownIntoBlocks(markdown: string): string[] {
   const tokens = marked.lexer(markdown);
   return tokens.map((token) => token.raw);
 }
 
-// Code block component with copy button
+// Code block component with copy button and optional preview
 function CodeBlock({
   children,
   className,
@@ -22,6 +23,7 @@ function CodeBlock({
 }) {
   const [copied, setCopied] = useState(false);
   const language = className?.replace("language-", "") || "";
+  const canvas = useCanvas();
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(children);
@@ -29,27 +31,49 @@ function CodeBlock({
     setTimeout(() => setCopied(false), 2000);
   }, [children]);
 
+  const handlePreview = useCallback(() => {
+    if (canvas) {
+      canvas.showPreview(children, language);
+    }
+  }, [canvas, children, language]);
+
+  // Check if this code is previewable (HTML, CSS, JS, JSX, TSX, React)
+  const isPreviewable = ["html", "css", "javascript", "js", "jsx", "tsx", "react", "typescript", "ts"].includes(language.toLowerCase());
+
   return (
     <div className="relative group my-3">
       <div className="flex items-center justify-between bg-zinc-800 dark:bg-zinc-900 text-zinc-400 text-xs px-4 py-2 rounded-t-lg">
         <span>{language || "code"}</span>
-        <button
-          type="button"
-          className="flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-zinc-700 transition-colors"
-          onClick={handleCopy}
-        >
-          {copied ? (
-            <>
-              <CheckIcon className="h-3 w-3" />
-              Copied!
-            </>
-          ) : (
-            <>
-              <CopyIcon className="h-3 w-3" />
-              Copy code
-            </>
+        <div className="flex items-center gap-1">
+          {/* Preview button - only show when canvas is open and code is previewable */}
+          {canvas?.isCanvasOpen && isPreviewable && (
+            <button
+              type="button"
+              className="flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-zinc-700 transition-colors text-blue-400 hover:text-blue-300"
+              onClick={handlePreview}
+            >
+              <EyeIcon className="h-3 w-3" />
+              Preview
+            </button>
           )}
-        </button>
+          <button
+            type="button"
+            className="flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-zinc-700 transition-colors"
+            onClick={handleCopy}
+          >
+            {copied ? (
+              <>
+                <CheckIcon className="h-3 w-3" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <CopyIcon className="h-3 w-3" />
+                Copy code
+              </>
+            )}
+          </button>
+        </div>
       </div>
       <pre className="bg-zinc-900 dark:bg-zinc-950 p-4 rounded-b-lg overflow-x-auto text-sm !mt-0">
         <code className={cn("text-zinc-100", className)}>{children}</code>

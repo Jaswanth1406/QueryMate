@@ -19,6 +19,8 @@ A modern, powerful AI chat application that lets you interact with multiple AI p
 - **🎤 Voice Input**: Speech-to-text for hands-free messaging
 - **📎 File Attachments**: Upload images and PDFs (Gemini & Perplexity)
 - **🔍 Web Search Toggle**: Enable/disable web search for Gemini models
+- **🎨 Canvas Mode**: Live code preview with React/Tailwind rendering
+- **🐍 Code Execution**: Run Python/JavaScript in secure E2B sandbox
 - Markdown support with syntax-highlighted code blocks
 - Conversation history with persistent storage
 - Auto-generated conversation titles using AI
@@ -62,6 +64,7 @@ A modern, powerful AI chat application that lets you interact with multiple AI p
   - Perplexity AI (via @ai-sdk/perplexity)
   - Groq (via @ai-sdk/groq)
 - **AI SDK**: Vercel AI SDK
+- **Code Execution**: E2B Code Interpreter (secure sandbox)
 - **UI Components**: Radix UI, Shadcn/ui
 - **Styling**: Tailwind CSS
 - **Markdown**: react-markdown with Shiki syntax highlighting
@@ -71,12 +74,14 @@ A modern, powerful AI chat application that lets you interact with multiple AI p
 ## 🎯 What Makes QueryMate Special?
 
 1. **10+ AI Models in One Place**: Switch between Google Gemini, Perplexity, and Groq models instantly
-2. **Real-time Streaming**: See AI responses as they're generated
-3. **Voice Input**: Speak your messages with built-in speech recognition
-4. **File Support**: Upload images and PDFs for AI analysis
-5. **Export Everything**: JSON export, PDF export, and import functionality
-6. **Mobile-First Design**: Fully responsive with optimized mobile layouts
-7. **Type-Safe**: Built with TypeScript for reliable code
+2. **🎨 Canvas Mode**: ChatGPT-style live code preview - see React components render in real-time
+3. **🐍 Code Execution**: Run Python/JavaScript code in a secure E2B sandbox with instant results
+4. **Real-time Streaming**: See AI responses as they're generated
+5. **Voice Input**: Speak your messages with built-in speech recognition
+6. **File Support**: Upload images and PDFs for AI analysis
+7. **Export Everything**: JSON export, PDF export, and import functionality
+8. **Mobile-First Design**: Fully responsive with optimized mobile layouts
+9. **Type-Safe**: Built with TypeScript for reliable code
 
 ## 🛠️ Installation
 
@@ -132,6 +137,9 @@ PERPLEXITY_API_KEY=your_perplexity_api_key
 
 # --- GROQ ---
 GROQ_API_KEY=your_groq_api_key
+
+# --- E2B CODE EXECUTION ---
+E2B_KEY=your_e2b_api_key
 ```
 
 4. **Push database schema**
@@ -449,6 +457,56 @@ QueryMate supports three AI providers with 10+ models:
 - Works with Gemini and Perplexity models
 - Groq models do not support attachments
 
+### 🎨 Canvas Mode (Live Code Preview)
+
+Canvas mode enables ChatGPT-style live code previews directly in the chat interface:
+
+- **Toggle Canvas**: Click the `<> Canvas` button in the input area to enable
+- **Generate Code**: Ask for React components, games, tools, etc.
+- **Preview Button**: Click "Preview" on any code block to see it render live
+- **Split View**: Resizable panel shows preview alongside chat
+- **Tabs**: Switch between Preview, Code, and Console views
+
+**Example Prompts for Canvas:**
+```
+Create a calculator app with a modern dark theme
+Build a Tic-Tac-Toe game with AI opponent
+Design a beautiful pricing card with 3 tiers
+Create an animated loading spinner using CSS
+Build a Pomodoro timer with start, pause, reset
+```
+
+**How it works:**
+1. Enable Canvas mode (purple `<> Canvas` button)
+2. Send a prompt asking for a React component
+3. AI generates complete, self-contained code with Tailwind CSS
+4. Click "Preview" on the code block
+5. See the component render live in the side panel
+
+### 🐍 Code Execution (E2B Sandbox)
+
+Run Python or JavaScript code in a secure cloud sandbox:
+
+- **Automatic Detection**: AI uses code execution for computational tasks
+- **Python Support**: Full Python 3 with common libraries
+- **JavaScript Support**: Node.js runtime
+- **Secure Sandbox**: Code runs in isolated E2B containers
+- **Real-time Output**: See stdout, stderr, and results
+
+**Example Prompts:**
+```
+Write a Python script that generates the first 20 Fibonacci numbers
+Calculate the factorial of 100
+Find all prime numbers between 1 and 1000
+Create a Python script to sort a list using bubble sort
+```
+
+**Output Display:**
+- Code is shown with syntax highlighting
+- Execution results appear below the code
+- Errors are clearly highlighted
+- Images/charts are rendered inline
+
 ### Export/Import Features
 
 - **Export All**: Download all conversations as JSON backup
@@ -632,6 +690,8 @@ messages
 - [x] Analytics dashboard
 - [x] Mobile-responsive design
 - [x] Groq integration (10+ models)
+- [x] Canvas mode (live code preview)
+- [x] Code execution (E2B sandbox)
 - [ ] Shared conversations with public links
 - [ ] Custom AI parameters (temperature, max tokens)
 - [ ] Team workspaces
@@ -668,6 +728,7 @@ npm run dev
 ## 🙏 Acknowledgments
 
 - [Vercel AI SDK](https://sdk.vercel.ai) for seamless AI integration
+- [E2B](https://e2b.dev) for secure code execution sandbox
 - [Better Auth](https://better-auth.com) for robust authentication
 - [Drizzle ORM](https://orm.drizzle.team) for type-safe database queries
 - [Radix UI](https://radix-ui.com) & [Shadcn/ui](https://ui.shadcn.com) for components

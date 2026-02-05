@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   GlobeIcon,
   PlusIcon,
@@ -8,8 +8,11 @@ import {
   MicOffIcon,
   CornerDownLeftIcon,
   StopCircleIcon,
+  CodeIcon,
+  SparklesIcon,
 } from "lucide-react";
 import { MemoizedMarkdown } from "./MemoizedMarkdown";
+import { CanvasProvider } from "./CanvasContext";
 import { mutateConversations, mutateUsage } from "./ChatSidebar";
 import { MODELS, MODEL_GROUPS, type Provider } from "@/lib/models";
 import ModelInfoModal from "./ModelInfoModal";
@@ -28,6 +31,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { CodeCanvas, ResizableSplit } from "./CodeCanvas";
+import type { Artifact, StreamedExecutionChunk, ExecutionResult } from "@/lib/playground/types";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -86,6 +92,7 @@ export default function ChatBox({
   setConversationId: (id: string | null) => void;
   chatTitle?: string | null;
 }) {
+  const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [selectedModel, setSelectedModel] =
@@ -104,6 +111,14 @@ export default function ChatBox({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const shouldStopRef = useRef(false);
+  
+  // Canvas state
+  const [isCanvasOpen, setIsCanvasOpen] = useState(false);
+  const [canvasArtifact, setCanvasArtifact] = useState<Artifact | null>(null);
+  const [isGeneratingCanvas, setIsGeneratingCanvas] = useState(false);
+  const [executionLogs, setExecutionLogs] = useState<StreamedExecutionChunk[]>([]);
+  const [executionResult, setExecutionResult] = useState<ExecutionResult | null>(null);
+  const [isExecuting, setIsExecuting] = useState(false);
 
   // Sync conversationId prop to local state
   useEffect(() => {
@@ -255,6 +270,7 @@ export default function ChatBox({
     formData.append("message", trimmed);
     formData.append("model", selectedModel);
     formData.append("useSearch", useSearch ? "true" : "false");
+    formData.append("useCanvas", isCanvasOpen ? "true" : "false");
     if (currentConvId) formData.append("conversationId", currentConvId);
 
     attachedFiles.forEach((file, index) => {
@@ -279,8 +295,20 @@ export default function ChatBox({
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to send message");
+        let errorMessage = "Failed to send message";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData?.error || errorMessage;
+        } catch {
+          // Response might not be JSON, try text
+          try {
+            const textError = await res.text();
+            if (textError) errorMessage = textError;
+          } catch {
+            // Ignore
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       // Stream response
@@ -380,7 +408,181 @@ export default function ChatBox({
     setInput("");
     setAttachedFiles([]);
     setUseSearch(false);
+    setIsCanvasOpen(false);
+    setCanvasArtifact(null);
+    setExecutionLogs([]);
+    setExecutionResult(null);
   }
+  
+  // Generate code with canvas
+  async function generateCanvas(prompt: string) {
+    setIsGeneratingCanvas(true);
+    setExecutionLogs([]);
+    setExecutionResult(null);
+    
+    try {
+      const response = await fetch("/api/playground/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ prompt }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.artifact) {
+        setCanvasArtifact(data.artifact);
+      } else {
+        throw new Error(data.error || "Failed to generate code");
+      }
+    } catch (error) {
+      console.error("Canvas generation error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Failed to generate code: ${error instanceof Error ? error.message : "Unknown error"}`,
+        },
+      ]);
+    } finally {
+      setIsGeneratingCanvas(false);
+    }
+  }
+  
+  // Execute backend code in E2B
+  async function executeCanvas() {
+    if (!canvasArtifact) return;
+    
+    setIsExecuting(true);
+    setExecutionLogs([]);
+    setExecutionResult(null);
+    
+    try {
+      const response = await fetch("/api/playground/execute/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ artifact: canvasArtifact }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Execution failed");
+      }
+      
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body");
+      
+      const decoder = new TextDecoder();
+      let buffer = "";
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
+        
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              setExecutionLogs((prev) => [...prev, data]);
+              
+              if (data.type === "done") {
+                setExecutionResult({
+                  success: data.content === "Execution complete",
+                  stdout: "",
+                  stderr: "",
+                });
+              }
+            } catch {
+              // Skip malformed JSON
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Execution error:", error);
+      setExecutionResult({
+        success: false,
+        stdout: "",
+        stderr: "",
+        error: error instanceof Error ? error.message : "Execution failed",
+      });
+    } finally {
+      setIsExecuting(false);
+    }
+  }
+  
+  // Close canvas preview panel (keep canvas mode ON)
+  function closeCanvas() {
+    setCanvasArtifact(null);
+    setExecutionLogs([]);
+    setExecutionResult(null);
+  }
+  
+  // Show preview from code block - creates an artifact from raw code
+  const showPreview = useCallback((code: string, language: string) => {
+    // Determine artifact type based on language
+    let artifactType: "frontend" | "backend" | "hybrid" = "frontend";
+    let fileName = "index.js";
+    let artifactLanguage = "javascript";
+    let runCommand: string | null = null;
+    
+    switch (language.toLowerCase()) {
+      case "html":
+        fileName = "index.html";
+        artifactLanguage = "html";
+        break;
+      case "css":
+        fileName = "styles.css";
+        artifactLanguage = "css";
+        break;
+      case "javascript":
+      case "js":
+        fileName = "script.js";
+        artifactLanguage = "javascript";
+        break;
+      case "jsx":
+      case "react":
+        fileName = "App.jsx";
+        artifactLanguage = "react";
+        break;
+      case "tsx":
+        fileName = "App.tsx";
+        artifactLanguage = "react";
+        break;
+      case "typescript":
+      case "ts":
+        fileName = "script.ts";
+        artifactLanguage = "node";
+        artifactType = "backend";
+        runCommand = "npx ts-node script.ts";
+        break;
+      case "python":
+      case "py":
+        fileName = "main.py";
+        artifactLanguage = "python";
+        artifactType = "backend";
+        runCommand = "python main.py";
+        break;
+    }
+    
+    // Create artifact from code
+    const artifact: Artifact = {
+      artifact_type: artifactType,
+      language: artifactLanguage as Artifact["language"],
+      files: [{ path: fileName, content: code }],
+      run: runCommand,
+    };
+    
+    setCanvasArtifact(artifact);
+    setExecutionLogs([]);
+    setExecutionResult(null);
+  }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.currentTarget.files;
@@ -408,18 +610,20 @@ export default function ChatBox({
     }
   };
 
-  return (
-    <div className="flex flex-col h-full bg-background">
-      {/* Chat Header - Shows title only on larger screens when there's a conversation */}
-      {(conversationId || messages.length > 0) && (
-        <div className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 hidden sm:block">
-          <div className="max-w-3xl mx-auto w-full px-6 py-3">
-            <h2 className="text-sm font-medium text-foreground truncate">
-              {chatTitle || "New Chat"}
-            </h2>
+  // Main chat UI component
+  const chatUI = (
+    <CanvasProvider isCanvasOpen={isCanvasOpen} showPreview={showPreview}>
+      <div className="flex flex-col h-full bg-background">
+        {/* Chat Header - Shows title only on larger screens when there's a conversation */}
+        {(conversationId || messages.length > 0) && (
+          <div className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 hidden sm:block">
+            <div className="max-w-3xl mx-auto w-full px-6 py-3">
+              <h2 className="text-sm font-medium text-foreground truncate">
+                {chatTitle || "New Chat"}
+              </h2>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Conversation Area */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
@@ -720,6 +924,24 @@ export default function ChatBox({
                   )}
                 </Button>
 
+                {/* Canvas toggle button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "h-8 w-8 sm:h-10 sm:w-auto sm:px-4 rounded-full transition-colors hover:bg-accent flex-shrink-0",
+                    isCanvasOpen && "bg-purple-500/20 text-purple-500",
+                  )}
+                  onClick={() => setIsCanvasOpen(!isCanvasOpen)}
+                  title={isCanvasOpen ? "Close canvas" : "Open canvas"}
+                  suppressHydrationWarning
+                >
+                  <CodeIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="text-xs hidden sm:inline sm:ml-1.5">
+                    Canvas
+                  </span>
+                </Button>
+
                 {/* Search button with label */}
                 {supportsSearch(selectedModel) && (
                   <Button
@@ -812,5 +1034,31 @@ export default function ChatBox({
         </div>
       </div>
     </div>
+    </CanvasProvider>
   );
+
+  // If canvas is open, render with split view
+  // Only show split panel when there's an artifact to preview
+  if (canvasArtifact) {
+    return (
+      <ResizableSplit
+        left={chatUI}
+        right={
+          <CodeCanvas
+            artifact={canvasArtifact}
+            onClose={closeCanvas}
+            onExecute={executeCanvas}
+            isExecuting={isExecuting}
+            executionLogs={executionLogs}
+            executionResult={executionResult}
+          />
+        }
+        defaultRightWidth={550}
+        minLeftWidth={400}
+        minRightWidth={400}
+      />
+    );
+  }
+
+  return chatUI;
 }

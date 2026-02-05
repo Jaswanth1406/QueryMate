@@ -244,6 +244,7 @@ export async function POST(req: NextRequest) {
     const title = formData.get("title") as string | null;
     const model = (formData.get("model") as string) || "gemini-2.5-flash";
     const useSearch = formData.get("useSearch") === "true";
+    const useCanvas = formData.get("useCanvas") === "true";
 
     const files: File[] = [];
     for (const [key, value] of formData.entries()) {
@@ -533,7 +534,38 @@ export async function POST(req: NextRequest) {
     // Build system prompt with tool instructions (Google only)
     let systemPrompt = "You are a helpful AI assistant";
 
-    if (provider === "google") {
+    // Canvas mode: generate complete, renderable code
+    if (useCanvas) {
+      systemPrompt = `You are a code generation assistant. When the user asks for code, you MUST:
+
+1. Generate COMPLETE, SELF-CONTAINED code that can run immediately
+2. Use React with functional components and hooks (useState, useEffect, etc.)
+3. Include Tailwind CSS classes for styling - make it look professional
+4. Put ALL code in a SINGLE code block with the jsx or tsx language tag
+5. The component should be the default export
+6. DO NOT split code across multiple code blocks
+7. DO NOT include lengthy explanations - just a brief description and the complete code
+8. DO NOT show file structure, installation steps, or multiple files
+9. Make the UI visually appealing with proper spacing, colors, and hover effects
+
+Example format:
+Here's a [brief description]:
+
+\`\`\`jsx
+import { useState } from "react";
+
+export default function ComponentName() {
+  // Complete implementation here
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      {/* Full UI with Tailwind styling */}
+    </div>
+  );
+}
+\`\`\`
+
+That's it - no additional explanations needed unless the user asks.`;
+    } else if (provider === "google") {
       systemPrompt += " with access to tools. ";
 
       if (useSearch) {
@@ -591,6 +623,7 @@ export async function POST(req: NextRequest) {
     });
 
     let full = "";
+    let lastToolCallArgs: { code?: string; language?: string } | null = null;
 
     // Use fullStream to capture text, tool calls, and tool results
     for await (const part of response.fullStream) {
@@ -598,32 +631,63 @@ export async function POST(req: NextRequest) {
         full += part.text;
       } else if (part.type === "tool-call") {
         console.log("Tool called:", part.toolName);
+        // Store the tool call arguments to display the code later
+        if (part.toolName === "executeCode") {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const args = (part as any).args as { code?: string; language?: string };
+          lastToolCallArgs = args;
+          console.log("Stored tool call args:", lastToolCallArgs?.code?.substring(0, 100));
+        }
       } else if (part.type === "tool-result") {
+        console.log("Tool result received, lastToolCallArgs:", lastToolCallArgs?.code?.substring(0, 50));
+        
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (part as any).output as {
+        const toolResult = part as any;
+        
+        // The result could be in .output or .result depending on AI SDK version
+        const result = (toolResult.output || toolResult.result) as {
           output?: string | null;
           error?: string | null;
           logs?: string[];
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           results?: Array<{ type: string; data: any }>;
-        };
+        } | undefined;
+
+        // Try to get args from tool result if not already captured
+        if (!lastToolCallArgs && toolResult.args) {
+          lastToolCallArgs = toolResult.args as { code?: string; language?: string };
+          console.log("Got args from tool result:", lastToolCallArgs?.code?.substring(0, 50));
+        }
+
+        // Append the code that was executed
+        if (lastToolCallArgs?.code) {
+          const lang = lastToolCallArgs.language || "python";
+          const cleanCode = lastToolCallArgs.code
+            .replace(/^```(?:python|javascript|js)?\n?/gm, "")
+            .replace(/```$/gm, "")
+            .trim();
+          full += `\n\n\`\`\`${lang}\n${cleanCode}\n\`\`\`\n`;
+          console.log("Added code to response");
+        } else {
+          console.log("No code args found to add");
+        }
 
         // Append tool results to the response
-        full += "\n\n**Code Execution Result:**\n";
+        full += "\n**Code Execution Result:**\n";
 
-        if (result.error) {
+        if (result?.error) {
           full += `\n❌ **Error:** ${result.error}\n`;
         }
 
-        if (result.output) {
+        if (result?.output) {
           full += `\n\`\`\`\n${result.output}\n\`\`\`\n`;
         }
 
-        if (result.logs && result.logs.length > 0) {
+        if (result?.logs && result.logs.length > 0) {
           full += `\n**Output:**\n\`\`\`\n${result.logs.join("").trim()}\n\`\`\`\n`;
         }
 
-        if (result.results && result.results.length > 0) {
+        if (result?.results && result.results.length > 0) {
           for (const res of result.results) {
             if (res.type === "image" && typeof res.data === "string") {
               full += `\n![Generated Image](data:image/png;base64,${res.data})\n`;
@@ -706,8 +770,23 @@ export async function POST(req: NextRequest) {
     });
   } catch (e) {
     console.error("Chat error:", e);
+    
+    // Check for rate limit error
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    const isRateLimit = errorMessage.includes("quota") || 
+                        errorMessage.includes("429") || 
+                        errorMessage.includes("rate") ||
+                        errorMessage.includes("RESOURCE_EXHAUSTED");
+    
+    if (isRateLimit) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please wait a moment and try again, or try a different model." },
+        { status: 429 },
+      );
+    }
+    
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : String(e) },
+      { error: errorMessage },
       { status: 500 },
     );
   }

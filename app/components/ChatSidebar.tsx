@@ -130,6 +130,56 @@ export default function ChatSidebar({
     return !search || chatTitle.toLowerCase().includes(search.toLowerCase());
   });
 
+  // Group chats by time period
+  const groupChatsByDate = (chatList: Conversation[]) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    const last7Days = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const last30Days = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const groups: {
+      today: Conversation[];
+      yesterday: Conversation[];
+      last7Days: Conversation[];
+      last30Days: Conversation[];
+      older: Conversation[];
+    } = {
+      today: [],
+      yesterday: [],
+      last7Days: [],
+      last30Days: [],
+      older: [],
+    };
+
+    // Sort by createdAt descending first
+    const sorted = [...chatList].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
+
+    for (const chat of sorted) {
+      const chatDate = chat.createdAt ? new Date(chat.createdAt) : new Date(0);
+      
+      if (chatDate >= today) {
+        groups.today.push(chat);
+      } else if (chatDate >= yesterday) {
+        groups.yesterday.push(chat);
+      } else if (chatDate >= last7Days) {
+        groups.last7Days.push(chat);
+      } else if (chatDate >= last30Days) {
+        groups.last30Days.push(chat);
+      } else {
+        groups.older.push(chat);
+      }
+    }
+
+    return groups;
+  };
+
+  const groupedChats = groupChatsByDate(filteredChats);
+
   const openEditDialog = (id: string, title: string) => {
     setConversationToEdit({ id, title });
     setEditTitle(title);
@@ -346,6 +396,84 @@ export default function ChatSidebar({
     }
   };
 
+  // Render a single chat item
+  const renderChatItem = (chat: Conversation) => {
+    const chatTitle = getChatTitle(chat);
+    return (
+      <div
+        key={chat.id}
+        className={`flex items-center gap-1 rounded-md px-2 py-1 ${
+          activeId === chat.id
+            ? "bg-gray-100 dark:bg-gray-800"
+            : "hover:bg-gray-100 dark:hover:bg-gray-800"
+        }`}
+      >
+        <button
+          className="text-left flex-1 min-w-0 py-1 text-sm text-gray-800 dark:text-gray-200"
+          onClick={() => {
+            setActiveId(chat.id);
+            onSelectConversation(chat.id, chatTitle);
+            setOpen(false);
+          }}
+          suppressHydrationWarning
+        >
+          <span className="truncate block">{chatTitle}</span>
+        </button>
+
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <button
+              type="button"
+              className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Conversation options"
+              suppressHydrationWarning
+            >
+              <MoreVertical className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content
+            side="right"
+            align="start"
+            className="z-[99] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm text-sm min-w-[150px] py-1"
+          >
+            <DropdownMenu.Item
+              onSelect={(e) => {
+                e.preventDefault();
+                openEditDialog(chat.id, chatTitle);
+              }}
+              className="px-3 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200"
+            >
+              <Edit className="w-3 h-3" />
+              <span>Edit</span>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              onSelect={(e) => {
+                e.preventDefault();
+                handleExportPDF(chat.id, chatTitle);
+              }}
+              className="px-3 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200"
+            >
+              <FileText className="w-3 h-3" />
+              <span>Export PDF</span>
+            </DropdownMenu.Item>
+            <DropdownMenu.Separator className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+            <DropdownMenu.Item
+              onSelect={(e) => {
+                e.preventDefault();
+                openDeleteDialog(chat.id, chatTitle);
+              }}
+              className="px-3 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
+            >
+              <Trash2 className="w-3 h-3" />
+              <span>Delete</span>
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      </div>
+    );
+  };
+
   const initial = (user?.name?.[0] || "U").toUpperCase();
 
   return (
@@ -492,87 +620,52 @@ export default function ChatSidebar({
         <nav className="flex-1 mt-4 mb-4 px-4 min-h-0 flex flex-col overflow-hidden">
           <div className="mb-2 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase flex items-center gap-1">
             <MessageSquare className="w-3 h-3" />
-            <span>Chats</span>
+            <span>Recent Chats</span>
           </div>
           <div className="flex-1 overflow-y-auto pr-1">
             <div className="flex flex-col gap-1">
               {filteredChats.length > 0 ? (
-                filteredChats.map((chat) => {
-                  const chatTitle = getChatTitle(chat);
-                  return (
-                    <div
-                      key={chat.id}
-                      className={`flex items-center gap-1 rounded-md px-2 py-1 ${
-                        activeId === chat.id
-                          ? "bg-gray-100 dark:bg-gray-800"
-                          : "hover:bg-gray-100 dark:hover:bg-gray-800"
-                      }`}
-                    >
-                      <button
-                        className="text-left flex-1 min-w-0 py-1 text-sm text-gray-800 dark:text-gray-200"
-                        onClick={() => {
-                          setActiveId(chat.id);
-                          onSelectConversation(chat.id, chatTitle);
-                          setOpen(false);
-                        }}
-                        suppressHydrationWarning
-                      >
-                        <span className="truncate">{chatTitle}</span>
-                      </button>
-
-                      <DropdownMenu.Root>
-                        <DropdownMenu.Trigger asChild>
-                          <button
-                            type="button"
-                            className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-                            onClick={(e) => e.stopPropagation()}
-                            aria-label="Conversation options"
-                            suppressHydrationWarning
-                          >
-                            <MoreVertical className="w-3 h-3 text-gray-600 dark:text-gray-400" />
-                          </button>
-                        </DropdownMenu.Trigger>
-                        <DropdownMenu.Content
-                          side="right"
-                          align="start"
-                          className="z-[99] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm text-sm min-w-[150px] py-1"
-                        >
-                          <DropdownMenu.Item
-                            onSelect={(e) => {
-                              e.preventDefault();
-                              openEditDialog(chat.id, chatTitle);
-                            }}
-                            className="px-3 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200"
-                          >
-                            <Edit className="w-3 h-3" />
-                            <span>Edit</span>
-                          </DropdownMenu.Item>
-                          <DropdownMenu.Item
-                            onSelect={(e) => {
-                              e.preventDefault();
-                              handleExportPDF(chat.id, chatTitle);
-                            }}
-                            className="px-3 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200"
-                          >
-                            <FileText className="w-3 h-3" />
-                            <span>Export PDF</span>
-                          </DropdownMenu.Item>
-                          <DropdownMenu.Separator className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
-                          <DropdownMenu.Item
-                            onSelect={(e) => {
-                              e.preventDefault();
-                              openDeleteDialog(chat.id, chatTitle);
-                            }}
-                            className="px-3 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                            <span>Delete</span>
-                          </DropdownMenu.Item>
-                        </DropdownMenu.Content>
-                      </DropdownMenu.Root>
+                <>
+                  {/* Today */}
+                  {groupedChats.today.length > 0 && (
+                    <div className="mb-2">
+                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">Today</div>
+                      {groupedChats.today.map((chat) => renderChatItem(chat))}
                     </div>
-                  );
-                })
+                  )}
+                  
+                  {/* Yesterday */}
+                  {groupedChats.yesterday.length > 0 && (
+                    <div className="mb-2">
+                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">Yesterday</div>
+                      {groupedChats.yesterday.map((chat) => renderChatItem(chat))}
+                    </div>
+                  )}
+                  
+                  {/* Last 7 Days */}
+                  {groupedChats.last7Days.length > 0 && (
+                    <div className="mb-2">
+                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">Previous 7 Days</div>
+                      {groupedChats.last7Days.map((chat) => renderChatItem(chat))}
+                    </div>
+                  )}
+                  
+                  {/* Last 30 Days */}
+                  {groupedChats.last30Days.length > 0 && (
+                    <div className="mb-2">
+                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">Previous 30 Days</div>
+                      {groupedChats.last30Days.map((chat) => renderChatItem(chat))}
+                    </div>
+                  )}
+                  
+                  {/* Older */}
+                  {groupedChats.older.length > 0 && (
+                    <div className="mb-2">
+                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">Older</div>
+                      {groupedChats.older.map((chat) => renderChatItem(chat))}
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="text-gray-400 dark:text-gray-500 text-sm py-8 text-center">
                   <MessageSquare className="w-8 h-8 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
