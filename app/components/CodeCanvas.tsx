@@ -331,6 +331,7 @@ export function CodeCanvas({
 /**
  * Resizable Split Layout
  * Wraps chat and canvas with a draggable divider
+ * On mobile: shows canvas as full-screen overlay
  */
 interface ResizableSplitProps {
   left: React.ReactNode;
@@ -350,6 +351,17 @@ export function ResizableSplit({
   const containerRef = useRef<HTMLDivElement>(null);
   const [rightWidth, setRightWidth] = useState(defaultRightWidth);
   const [isDragging, setIsDragging] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -388,6 +400,20 @@ export function ResizableSplit({
     };
   }, [isDragging, minLeftWidth, minRightWidth]);
 
+  // Mobile: show canvas as full-screen overlay
+  if (isMobile) {
+    return (
+      <div className="relative h-full w-full">
+        {/* Chat (hidden when canvas is shown on mobile) */}
+        <div className="hidden">{left}</div>
+
+        {/* Canvas as full-screen overlay on mobile */}
+        <div className="fixed inset-0 z-50 bg-background">{right}</div>
+      </div>
+    );
+  }
+
+  // Desktop: side-by-side resizable split
   return (
     <div ref={containerRef} className="flex h-full w-full overflow-hidden">
       {/* Left panel (chat) */}
