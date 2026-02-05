@@ -294,7 +294,10 @@ export default function AnalyticsDashboard() {
             Messages by Hour (24h)
           </h2>
           {(() => {
-            const maxCount = Math.max(...analytics.timeAnalytics.messagesByHour, 1);
+            const maxCount = Math.max(
+              ...analytics.timeAnalytics.messagesByHour,
+              1,
+            );
             return (
               <div className="flex items-end gap-1 h-48">
                 {analytics.timeAnalytics.messagesByHour.map((count, hour) => {
@@ -308,7 +311,12 @@ export default function AnalyticsDashboard() {
                       <div className="w-full flex-1 flex items-end">
                         <div
                           className="w-full bg-blue-500 rounded-t transition-all min-h-[2px]"
-                          style={{ height: count > 0 ? `${Math.max(heightPercent, 5)}%` : '2px' }}
+                          style={{
+                            height:
+                              count > 0
+                                ? `${Math.max(heightPercent, 5)}%`
+                                : "2px",
+                          }}
                         />
                       </div>
                       {hour % 3 === 0 && (
