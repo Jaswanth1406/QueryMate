@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, ReactNode } from "react";
-import type { Artifact } from "@/lib/playground/types";
 
 interface CanvasContextType {
   isCanvasOpen: boolean;

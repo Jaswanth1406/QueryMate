@@ -2,13 +2,19 @@
 
 /**
  * FileTree Component
- * 
+ *
  * Displays a hierarchical file tree for the artifact files.
  * Supports folder expansion/collapse and file selection.
  */
 
 import { useState } from "react";
-import { ChevronRight, ChevronDown, FileIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
+import {
+  ChevronRight,
+  ChevronDown,
+  FileIcon,
+  FolderIcon,
+  FolderOpenIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FileTreeNode } from "@/lib/playground/types";
 
@@ -28,7 +34,7 @@ interface TreeNodeProps {
 // Get icon color based on file extension
 function getFileIconColor(name: string): string {
   const ext = name.split(".").pop()?.toLowerCase();
-  
+
   const colorMap: Record<string, string> = {
     html: "text-orange-500",
     htm: "text-orange-500",
@@ -44,7 +50,7 @@ function getFileIconColor(name: string): string {
     vue: "text-emerald-500",
     sh: "text-gray-600",
   };
-  
+
   return colorMap[ext || ""] || "text-gray-400";
 }
 
@@ -52,7 +58,7 @@ function TreeNode({ node, depth, selectedPath, onSelectFile }: TreeNodeProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const isFolder = node.type === "folder";
   const isSelected = node.path === selectedPath;
-  
+
   const handleClick = () => {
     if (isFolder) {
       setIsExpanded(!isExpanded);
@@ -60,14 +66,14 @@ function TreeNode({ node, depth, selectedPath, onSelectFile }: TreeNodeProps) {
       onSelectFile(node.path);
     }
   };
-  
+
   return (
     <div>
       <div
         className={cn(
           "flex items-center gap-1 px-2 py-1 text-sm cursor-pointer rounded-md transition-colors",
           "hover:bg-muted/50",
-          isSelected && "bg-primary/10 text-primary"
+          isSelected && "bg-primary/10 text-primary",
         )}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={handleClick}
@@ -82,7 +88,7 @@ function TreeNode({ node, depth, selectedPath, onSelectFile }: TreeNodeProps) {
             )}
           </span>
         )}
-        
+
         {/* File/folder icon */}
         {isFolder ? (
           isExpanded ? (
@@ -93,11 +99,11 @@ function TreeNode({ node, depth, selectedPath, onSelectFile }: TreeNodeProps) {
         ) : (
           <FileIcon className={cn("w-4 h-4", getFileIconColor(node.name))} />
         )}
-        
+
         {/* Name */}
         <span className="truncate">{node.name}</span>
       </div>
-      
+
       {/* Render children if folder is expanded */}
       {isFolder && isExpanded && node.children && (
         <div>
@@ -124,7 +130,7 @@ export function FileTree({ nodes, selectedPath, onSelectFile }: FileTreeProps) {
       </div>
     );
   }
-  
+
   return (
     <div className="py-2">
       {nodes.map((node) => (

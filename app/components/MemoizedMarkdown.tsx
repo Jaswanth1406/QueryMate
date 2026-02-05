@@ -38,7 +38,17 @@ function CodeBlock({
   }, [canvas, children, language]);
 
   // Check if this code is previewable (HTML, CSS, JS, JSX, TSX, React)
-  const isPreviewable = ["html", "css", "javascript", "js", "jsx", "tsx", "react", "typescript", "ts"].includes(language.toLowerCase());
+  const isPreviewable = [
+    "html",
+    "css",
+    "javascript",
+    "js",
+    "jsx",
+    "tsx",
+    "react",
+    "typescript",
+    "ts",
+  ].includes(language.toLowerCase());
 
   return (
     <div className="relative group my-3">

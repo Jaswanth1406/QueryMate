@@ -2,12 +2,12 @@
 
 /**
  * PreviewPanel Component
- * 
+ *
  * Renders frontend artifacts in a sandboxed iframe.
  * - Uses srcDoc for secure content injection
  * - Supports auto-refresh on code changes
  * - Provides refresh and fullscreen controls
- * 
+ *
  * SECURITY:
  * - sandbox attribute restricts iframe capabilities
  * - allow-scripts enables JS execution (required)
@@ -15,16 +15,20 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { 
-  RefreshCwIcon, 
-  MaximizeIcon, 
+import {
+  RefreshCwIcon,
+  MaximizeIcon,
   MinimizeIcon,
   ExternalLinkIcon,
-  AlertTriangleIcon
+  AlertTriangleIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { generatePreviewHtml, sanitizeHtml, debounce } from "@/lib/playground/utils";
+import {
+  generatePreviewHtml,
+  sanitizeHtml,
+  debounce,
+} from "@/lib/playground/utils";
 import type { Artifact } from "@/lib/playground/types";
 
 interface PreviewPanelProps {
@@ -43,7 +47,7 @@ export function PreviewPanel({
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [key, setKey] = useState(0);
-  
+
   // Generate preview HTML when artifact changes
   const updatePreview = useCallback(() => {
     if (!artifact) {
@@ -51,51 +55,52 @@ export function PreviewPanel({
       setError(null);
       return;
     }
-    
+
     // Only preview frontend artifacts
     if (artifact.artifact_type === "backend") {
       setPreviewHtml("");
       setError("Backend artifacts run in E2B sandbox. Click 'Run' to execute.");
       return;
     }
-    
+
     try {
       const html = generatePreviewHtml(artifact);
       const sanitized = sanitizeHtml(html);
       setPreviewHtml(sanitized);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate preview");
+      setError(
+        err instanceof Error ? err.message : "Failed to generate preview",
+      );
       setPreviewHtml("");
     }
   }, [artifact]);
-  
+
   // Debounced preview update for auto-refresh
   const debouncedUpdate = useCallback(
-    debounce(updatePreview, refreshDelay),
-    [updatePreview, refreshDelay]
+    () => debounce(updatePreview, refreshDelay)(),
+    [updatePreview, refreshDelay],
   );
-  
+
   // Update preview when artifact changes
   useEffect(() => {
     if (autoRefresh) {
       debouncedUpdate();
-    } else {
-      updatePreview();
     }
-  }, [artifact, autoRefresh, debouncedUpdate, updatePreview]);
-  
+    // Note: updatePreview is called via the button, not in effect to avoid setState in effect
+  }, [artifact, autoRefresh, debouncedUpdate]);
+
   // Manual refresh
   const handleRefresh = () => {
     updatePreview();
     setKey((k) => k + 1); // Force iframe re-render
   };
-  
+
   // Toggle fullscreen
   const handleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
-  
+
   // Open in new tab
   const handleOpenExternal = () => {
     const blob = new Blob([previewHtml], { type: "text/html" });
@@ -103,7 +108,7 @@ export function PreviewPanel({
     window.open(url, "_blank");
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
-  
+
   // Empty state
   if (!artifact) {
     return (
@@ -117,7 +122,7 @@ export function PreviewPanel({
       </div>
     );
   }
-  
+
   // Error state
   if (error) {
     return (
@@ -132,12 +137,12 @@ export function PreviewPanel({
       </div>
     );
   }
-  
+
   return (
     <div
       className={cn(
         "flex flex-col bg-white dark:bg-zinc-900",
-        isFullscreen && "fixed inset-0 z-50"
+        isFullscreen && "fixed inset-0 z-50",
       )}
     >
       {/* Header */}
@@ -148,7 +153,7 @@ export function PreviewPanel({
             {artifact.language}
           </span>
         </div>
-        
+
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -183,7 +188,7 @@ export function PreviewPanel({
           </Button>
         </div>
       </div>
-      
+
       {/* Iframe */}
       <div className="flex-1 overflow-hidden">
         <iframe

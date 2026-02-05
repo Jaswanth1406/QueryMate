@@ -2,7 +2,7 @@
 
 /**
  * ExecutionPanel Component
- * 
+ *
  * Displays execution output from E2B sandbox.
  * - Shows stdout/stderr in real-time
  * - Supports streaming output via SSE
@@ -10,18 +10,21 @@
  */
 
 import { useState, useRef, useEffect } from "react";
-import { 
-  PlayIcon, 
-  SquareIcon, 
-  TrashIcon, 
-  CopyIcon, 
+import {
+  PlayIcon,
+  SquareIcon,
+  CopyIcon,
   CheckIcon,
   TerminalIcon,
-  AlertCircleIcon
+  AlertCircleIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import type { Artifact, StreamedExecutionChunk, ExecutionResult } from "@/lib/playground/types";
+import type {
+  Artifact,
+  StreamedExecutionChunk,
+  ExecutionResult,
+} from "@/lib/playground/types";
 
 interface ExecutionPanelProps {
   artifact: Artifact | null;
@@ -40,23 +43,25 @@ export function ExecutionPanel({
 }: ExecutionPanelProps) {
   const outputRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
-  
+
   // Auto-scroll to bottom when new logs arrive
   useEffect(() => {
     if (outputRef.current) {
       outputRef.current.scrollTop = outputRef.current.scrollHeight;
     }
   }, [logs]);
-  
+
   const handleCopy = async () => {
     const text = logs.map((l) => l.content).join("\n");
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-  
-  const isBackend = artifact?.artifact_type === "backend" || artifact?.artifact_type === "hybrid";
-  
+
+  const isBackend =
+    artifact?.artifact_type === "backend" ||
+    artifact?.artifact_type === "hybrid";
+
   // Get output text color based on log type
   const getLogColor = (type: string) => {
     switch (type) {
@@ -71,7 +76,7 @@ export function ExecutionPanel({
         return "text-foreground";
     }
   };
-  
+
   return (
     <div className="flex flex-col h-full bg-zinc-950">
       {/* Header */}
@@ -85,7 +90,7 @@ export function ExecutionPanel({
                 "text-xs px-2 py-0.5 rounded",
                 result.success
                   ? "bg-green-500/20 text-green-500"
-                  : "bg-red-500/20 text-red-500"
+                  : "bg-red-500/20 text-red-500",
               )}
             >
               {result.success ? "Success" : "Failed"}
@@ -97,7 +102,7 @@ export function ExecutionPanel({
             </span>
           )}
         </div>
-        
+
         <div className="flex items-center gap-1">
           {isBackend && (
             <Button
@@ -136,7 +141,7 @@ export function ExecutionPanel({
           </Button>
         </div>
       </div>
-      
+
       {/* Output area */}
       <div
         ref={outputRef}
@@ -166,7 +171,10 @@ export function ExecutionPanel({
         ) : (
           <div className="space-y-1">
             {logs.map((log, i) => (
-              <div key={i} className={cn("whitespace-pre-wrap", getLogColor(log.type))}>
+              <div
+                key={i}
+                className={cn("whitespace-pre-wrap", getLogColor(log.type))}
+              >
                 {log.type === "status" && (
                   <span className="text-blue-400">[info] </span>
                 )}

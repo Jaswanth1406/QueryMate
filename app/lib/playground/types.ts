@@ -9,13 +9,13 @@
 
 export type ArtifactType = "frontend" | "backend" | "hybrid";
 
-export type ArtifactLanguage = 
-  | "html" 
-  | "css" 
-  | "javascript" 
-  | "react" 
+export type ArtifactLanguage =
+  | "html"
+  | "css"
+  | "javascript"
+  | "react"
   | "vue"
-  | "python" 
+  | "python"
   | "node"
   | "bash";
 
@@ -157,18 +157,14 @@ export interface PreviewConfig {
 /** Languages that run in the browser (iframe) */
 export const FRONTEND_LANGUAGES: ArtifactLanguage[] = [
   "html",
-  "css", 
+  "css",
   "javascript",
   "react",
-  "vue"
+  "vue",
 ];
 
 /** Languages that run in E2B sandbox */
-export const BACKEND_LANGUAGES: ArtifactLanguage[] = [
-  "python",
-  "node",
-  "bash"
-];
+export const BACKEND_LANGUAGES: ArtifactLanguage[] = ["python", "node", "bash"];
 
 /** Check if a language runs in the browser */
 export function isFrontendLanguage(lang: ArtifactLanguage): boolean {

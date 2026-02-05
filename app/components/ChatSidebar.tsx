@@ -161,7 +161,7 @@ export default function ChatSidebar({
 
     for (const chat of sorted) {
       const chatDate = chat.createdAt ? new Date(chat.createdAt) : new Date(0);
-      
+
       if (chatDate >= today) {
         groups.today.push(chat);
       } else if (chatDate >= yesterday) {
@@ -629,39 +629,55 @@ export default function ChatSidebar({
                   {/* Today */}
                   {groupedChats.today.length > 0 && (
                     <div className="mb-2">
-                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">Today</div>
+                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">
+                        Today
+                      </div>
                       {groupedChats.today.map((chat) => renderChatItem(chat))}
                     </div>
                   )}
-                  
+
                   {/* Yesterday */}
                   {groupedChats.yesterday.length > 0 && (
                     <div className="mb-2">
-                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">Yesterday</div>
-                      {groupedChats.yesterday.map((chat) => renderChatItem(chat))}
+                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">
+                        Yesterday
+                      </div>
+                      {groupedChats.yesterday.map((chat) =>
+                        renderChatItem(chat),
+                      )}
                     </div>
                   )}
-                  
+
                   {/* Last 7 Days */}
                   {groupedChats.last7Days.length > 0 && (
                     <div className="mb-2">
-                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">Previous 7 Days</div>
-                      {groupedChats.last7Days.map((chat) => renderChatItem(chat))}
+                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">
+                        Previous 7 Days
+                      </div>
+                      {groupedChats.last7Days.map((chat) =>
+                        renderChatItem(chat),
+                      )}
                     </div>
                   )}
-                  
+
                   {/* Last 30 Days */}
                   {groupedChats.last30Days.length > 0 && (
                     <div className="mb-2">
-                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">Previous 30 Days</div>
-                      {groupedChats.last30Days.map((chat) => renderChatItem(chat))}
+                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">
+                        Previous 30 Days
+                      </div>
+                      {groupedChats.last30Days.map((chat) =>
+                        renderChatItem(chat),
+                      )}
                     </div>
                   )}
-                  
+
                   {/* Older */}
                   {groupedChats.older.length > 0 && (
                     <div className="mb-2">
-                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">Older</div>
+                      <div className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase px-2 py-1">
+                        Older
+                      </div>
                       {groupedChats.older.map((chat) => renderChatItem(chat))}
                     </div>
                   )}

@@ -2,7 +2,7 @@
 
 /**
  * CodeEditor Component
- * 
+ *
  * Simple code editor with syntax highlighting.
  * Uses a textarea with monospace font for MVP.
  * Can be replaced with Monaco Editor for production.
@@ -24,6 +24,7 @@ interface CodeEditorProps {
 
 export function CodeEditor({
   code,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   language,
   filePath,
   onChange,
@@ -33,20 +34,23 @@ export function CodeEditor({
   const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState<string[]>([code]);
   const [historyIndex, setHistoryIndex] = useState(0);
-  
+
   // Update history when code changes
-  const handleChange = useCallback((newCode: string) => {
-    onChange(newCode);
-    
-    // Add to history (debounced conceptually)
-    setHistory((prev) => {
-      const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push(newCode);
-      return newHistory.slice(-50); // Keep last 50 states
-    });
-    setHistoryIndex((prev) => Math.min(prev + 1, 49));
-  }, [onChange, historyIndex]);
-  
+  const handleChange = useCallback(
+    (newCode: string) => {
+      onChange(newCode);
+
+      // Add to history (debounced conceptually)
+      setHistory((prev) => {
+        const newHistory = prev.slice(0, historyIndex + 1);
+        newHistory.push(newCode);
+        return newHistory.slice(-50); // Keep last 50 states
+      });
+      setHistoryIndex((prev) => Math.min(prev + 1, 49));
+    },
+    [onChange, historyIndex],
+  );
+
   const handleUndo = () => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
@@ -54,7 +58,7 @@ export function CodeEditor({
       onChange(history[newIndex]);
     }
   };
-  
+
   const handleRedo = () => {
     if (historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
@@ -62,13 +66,13 @@ export function CodeEditor({
       onChange(history[newIndex]);
     }
   };
-  
+
   const handleCopy = async () => {
     await navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-  
+
   // Handle tab key for indentation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Tab") {
@@ -76,39 +80,40 @@ export function CodeEditor({
       const target = e.target as HTMLTextAreaElement;
       const start = target.selectionStart;
       const end = target.selectionEnd;
-      
+
       const newCode = code.substring(0, start) + "  " + code.substring(end);
       handleChange(newCode);
-      
+
       // Restore cursor position
       setTimeout(() => {
         target.selectionStart = target.selectionEnd = start + 2;
       }, 0);
     }
-    
+
     // Ctrl/Cmd + Z for undo
     if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
       e.preventDefault();
       handleUndo();
     }
-    
+
     // Ctrl/Cmd + Shift + Z for redo
     if ((e.ctrlKey || e.metaKey) && e.key === "z" && e.shiftKey) {
       e.preventDefault();
       handleRedo();
     }
   };
-  
+
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
+      textareaRef.current.style.height =
+        textareaRef.current.scrollHeight + "px";
     }
   }, [code]);
-  
+
   const editorLanguage = getEditorLanguage(filePath);
-  
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -119,7 +124,7 @@ export function CodeEditor({
             {editorLanguage}
           </span>
         </div>
-        
+
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -156,7 +161,7 @@ export function CodeEditor({
           </Button>
         </div>
       </div>
-      
+
       {/* Editor */}
       <div className="flex-1 overflow-auto bg-background">
         <div className="flex min-h-full">
@@ -166,7 +171,7 @@ export function CodeEditor({
               <div key={i}>{i + 1}</div>
             ))}
           </div>
-          
+
           {/* Code textarea */}
           <textarea
             ref={textareaRef}
@@ -178,7 +183,7 @@ export function CodeEditor({
               "flex-1 p-4 bg-transparent resize-none outline-none",
               "font-mono text-sm leading-6 whitespace-pre",
               "placeholder:text-muted-foreground",
-              readOnly && "cursor-default"
+              readOnly && "cursor-default",
             )}
             spellCheck={false}
             placeholder="// Your code here..."

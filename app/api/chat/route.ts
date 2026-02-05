@@ -634,29 +634,46 @@ That's it - no additional explanations needed unless the user asks.`;
         // Store the tool call arguments to display the code later
         if (part.toolName === "executeCode") {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const args = (part as any).args as { code?: string; language?: string };
+          const args = (part as any).args as {
+            code?: string;
+            language?: string;
+          };
           lastToolCallArgs = args;
-          console.log("Stored tool call args:", lastToolCallArgs?.code?.substring(0, 100));
+          console.log(
+            "Stored tool call args:",
+            lastToolCallArgs?.code?.substring(0, 100),
+          );
         }
       } else if (part.type === "tool-result") {
-        console.log("Tool result received, lastToolCallArgs:", lastToolCallArgs?.code?.substring(0, 50));
-        
+        console.log(
+          "Tool result received, lastToolCallArgs:",
+          lastToolCallArgs?.code?.substring(0, 50),
+        );
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const toolResult = part as any;
-        
+
         // The result could be in .output or .result depending on AI SDK version
-        const result = (toolResult.output || toolResult.result) as {
-          output?: string | null;
-          error?: string | null;
-          logs?: string[];
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          results?: Array<{ type: string; data: any }>;
-        } | undefined;
+        const result = (toolResult.output || toolResult.result) as
+          | {
+              output?: string | null;
+              error?: string | null;
+              logs?: string[];
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              results?: Array<{ type: string; data: any }>;
+            }
+          | undefined;
 
         // Try to get args from tool result if not already captured
         if (!lastToolCallArgs && toolResult.args) {
-          lastToolCallArgs = toolResult.args as { code?: string; language?: string };
-          console.log("Got args from tool result:", lastToolCallArgs?.code?.substring(0, 50));
+          lastToolCallArgs = toolResult.args as {
+            code?: string;
+            language?: string;
+          };
+          console.log(
+            "Got args from tool result:",
+            lastToolCallArgs?.code?.substring(0, 50),
+          );
         }
 
         // Append the code that was executed
@@ -770,24 +787,25 @@ That's it - no additional explanations needed unless the user asks.`;
     });
   } catch (e) {
     console.error("Chat error:", e);
-    
+
     // Check for rate limit error
     const errorMessage = e instanceof Error ? e.message : String(e);
-    const isRateLimit = errorMessage.includes("quota") || 
-                        errorMessage.includes("429") || 
-                        errorMessage.includes("rate") ||
-                        errorMessage.includes("RESOURCE_EXHAUSTED");
-    
+    const isRateLimit =
+      errorMessage.includes("quota") ||
+      errorMessage.includes("429") ||
+      errorMessage.includes("rate") ||
+      errorMessage.includes("RESOURCE_EXHAUSTED");
+
     if (isRateLimit) {
       return NextResponse.json(
-        { error: "Rate limit exceeded. Please wait a moment and try again, or try a different model." },
+        {
+          error:
+            "Rate limit exceeded. Please wait a moment and try again, or try a different model.",
+        },
         { status: 429 },
       );
     }
-    
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 },
-    );
+
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

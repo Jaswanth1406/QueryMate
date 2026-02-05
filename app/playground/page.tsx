@@ -2,7 +2,7 @@
 
 /**
  * Playground Page
- * 
+ *
  * Claude Artifacts-style code playground with:
  * - LLM-powered code generation (structured JSON artifacts)
  * - Live iframe preview for frontend code
@@ -13,15 +13,14 @@
  */
 
 import { useCallback, useMemo } from "react";
-import { 
-  PanelLeftIcon, 
-  PanelRightIcon,
+import {
+  PanelLeftIcon,
   CodeIcon,
   EyeIcon,
   TerminalIcon,
   SparklesIcon,
   AlertCircleIcon,
-  XIcon
+  XIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -51,24 +50,31 @@ export default function PlaygroundPage() {
     executeArtifact,
     clearError,
   } = usePlayground();
-  
+
   // Get current file content
   const currentFile = useMemo(() => {
     if (!artifact || !selectedFile) return null;
     return artifact.files.find((f) => f.path === selectedFile);
   }, [artifact, selectedFile]);
-  
+
   // Handle code changes
-  const handleCodeChange = useCallback((code: string) => {
-    if (selectedFile) {
-      updateFileContent(selectedFile, code);
-    }
-  }, [selectedFile, updateFileContent]);
-  
+  const handleCodeChange = useCallback(
+    (code: string) => {
+      if (selectedFile) {
+        updateFileContent(selectedFile, code);
+      }
+    },
+    [selectedFile, updateFileContent],
+  );
+
   // Determine which panels to show
-  const showPreview = artifact?.artifact_type === "frontend" || artifact?.artifact_type === "hybrid";
-  const showExecution = artifact?.artifact_type === "backend" || artifact?.artifact_type === "hybrid";
-  
+  const showPreview =
+    artifact?.artifact_type === "frontend" ||
+    artifact?.artifact_type === "hybrid";
+  const showExecution =
+    artifact?.artifact_type === "backend" ||
+    artifact?.artifact_type === "hybrid";
+
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
@@ -84,17 +90,22 @@ export default function PlaygroundPage() {
             <span className="text-sm font-medium">Playground</span>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {artifact && (
             <div className="flex items-center gap-2 px-3 py-1 bg-muted rounded-md">
               <span className="text-xs text-muted-foreground">Type:</span>
-              <span className={cn(
-                "text-xs font-medium px-2 py-0.5 rounded",
-                artifact.artifact_type === "frontend" && "bg-blue-500/20 text-blue-500",
-                artifact.artifact_type === "backend" && "bg-green-500/20 text-green-500",
-                artifact.artifact_type === "hybrid" && "bg-purple-500/20 text-purple-500",
-              )}>
+              <span
+                className={cn(
+                  "text-xs font-medium px-2 py-0.5 rounded",
+                  artifact.artifact_type === "frontend" &&
+                    "bg-blue-500/20 text-blue-500",
+                  artifact.artifact_type === "backend" &&
+                    "bg-green-500/20 text-green-500",
+                  artifact.artifact_type === "hybrid" &&
+                    "bg-purple-500/20 text-purple-500",
+                )}
+              >
                 {artifact.artifact_type}
               </span>
               <span className="text-xs text-muted-foreground">Lang:</span>
@@ -103,7 +114,7 @@ export default function PlaygroundPage() {
           )}
         </div>
       </header>
-      
+
       {/* Error Banner */}
       {error && (
         <div className="flex items-center justify-between px-4 py-2 bg-destructive/10 border-b border-destructive/20">
@@ -121,7 +132,7 @@ export default function PlaygroundPage() {
           </Button>
         </div>
       )}
-      
+
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - File Tree */}
@@ -140,7 +151,7 @@ export default function PlaygroundPage() {
             />
           </div>
         </aside>
-        
+
         {/* Center - Code Editor */}
         <main className="flex-1 flex flex-col min-w-0">
           {currentFile ? (
@@ -166,7 +177,7 @@ export default function PlaygroundPage() {
             </div>
           )}
         </main>
-        
+
         {/* Right Panel - Preview or Execution */}
         <aside className="w-[400px] border-l flex flex-col">
           {/* Tabs */}
@@ -177,7 +188,7 @@ export default function PlaygroundPage() {
                 "border-b-2 transition-colors",
                 showPreview
                   ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
               <EyeIcon className="w-4 h-4" />
@@ -189,14 +200,14 @@ export default function PlaygroundPage() {
                 "border-b-2 transition-colors",
                 showExecution && !showPreview
                   ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
               <TerminalIcon className="w-4 h-4" />
               Console
             </button>
           </div>
-          
+
           {/* Panel Content */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Preview for frontend/hybrid */}
@@ -205,7 +216,7 @@ export default function PlaygroundPage() {
                 <PreviewPanel artifact={artifact} />
               </div>
             )}
-            
+
             {/* Execution for backend/hybrid */}
             {showExecution && (
               <div className={cn("border-t", showPreview ? "h-1/2" : "flex-1")}>
@@ -218,7 +229,7 @@ export default function PlaygroundPage() {
                 />
               </div>
             )}
-            
+
             {/* Default execution panel for backend-only */}
             {!showPreview && !showExecution && artifact && (
               <ExecutionPanel
@@ -232,12 +243,9 @@ export default function PlaygroundPage() {
           </div>
         </aside>
       </div>
-      
+
       {/* Prompt Input */}
-      <PromptInput
-        onSubmit={generateArtifact}
-        isGenerating={isGenerating}
-      />
+      <PromptInput onSubmit={generateArtifact} isGenerating={isGenerating} />
     </div>
   );
 }

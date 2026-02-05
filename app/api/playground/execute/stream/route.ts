@@ -1,6 +1,6 @@
 /**
  * POST /api/playground/execute/stream
- * 
+ *
  * Streams execution output in real-time from E2B sandbox.
  * Uses Server-Sent Events (SSE) for streaming.
  */
@@ -11,15 +11,12 @@ import { getAuthSession } from "@/lib/auth-middleware";
 import { isFrontendLanguage } from "@/lib/playground/types";
 import type { ExecuteRequest } from "@/lib/playground/types";
 
-const DEFAULT_TIMEOUT = 30;
-const MAX_TIMEOUT = 120;
-
 /**
  * Write files to the E2B sandbox filesystem
  */
 async function writeFilesToSandbox(
   sandbox: CodeInterpreter,
-  files: { path: string; content: string }[]
+  files: { path: string; content: string }[],
 ): Promise<void> {
   for (const file of files) {
     const dirPath = file.path.split("/").slice(0, -1).join("/");
@@ -57,26 +54,32 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { artifact, timeout = DEFAULT_TIMEOUT } = body;
+  const { artifact } = body;
 
   // SECURITY: Reject frontend artifacts
-  if (artifact.artifact_type === "frontend" || isFrontendLanguage(artifact.language)) {
+  if (
+    artifact.artifact_type === "frontend" ||
+    isFrontendLanguage(artifact.language)
+  ) {
     return new Response(
       JSON.stringify({ error: "Frontend code runs in browser, not E2B" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 
   // Supports both E2B_API_KEY and E2B_KEY
   const e2bApiKey = process.env.E2B_API_KEY || process.env.E2B_KEY;
   if (!e2bApiKey) {
-    return new Response(JSON.stringify({ error: "E2B API key not configured. Set E2B_API_KEY or E2B_KEY in .env" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: "E2B API key not configured. Set E2B_API_KEY or E2B_KEY in .env",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
-
-  const _safeTimeout = Math.min(Math.max(1, timeout), MAX_TIMEOUT);
 
   // Create streaming response
   const encoder = new TextEncoder();
@@ -91,7 +94,7 @@ export async function POST(request: NextRequest) {
 
       try {
         sendEvent("status", "Creating sandbox...");
-        
+
         sandbox = await CodeInterpreter.create({
           apiKey: e2bApiKey,
         });
@@ -104,10 +107,10 @@ export async function POST(request: NextRequest) {
         if (!mainFile) {
           throw new Error("No files to execute");
         }
-        
+
         // Determine language for E2B
         const lang = artifact.language === "node" ? "js" : "python";
-        
+
         sendEvent("status", `Executing ${artifact.language} code...`);
 
         // Execute using runCode API
@@ -119,11 +122,11 @@ export async function POST(request: NextRequest) {
         if (execution.text) {
           sendEvent("stdout", execution.text);
         }
-        
+
         // Send logs
         const stdoutLogs = execution.logs?.stdout || [];
         const stderrLogs = execution.logs?.stderr || [];
-        
+
         for (const log of stdoutLogs) {
           sendEvent("stdout", log);
         }
@@ -133,16 +136,24 @@ export async function POST(request: NextRequest) {
 
         // Send error if any
         if (execution.error) {
-          sendEvent("error", `${execution.error.name}: ${execution.error.value}`);
+          sendEvent(
+            "error",
+            `${execution.error.name}: ${execution.error.value}`,
+          );
           if (execution.error.traceback) {
             sendEvent("stderr", execution.error.traceback);
           }
         }
 
-        sendEvent("done", execution.error ? "Execution failed" : "Execution complete");
-
+        sendEvent(
+          "done",
+          execution.error ? "Execution failed" : "Execution complete",
+        );
       } catch (error) {
-        sendEvent("error", error instanceof Error ? error.message : "Execution failed");
+        sendEvent(
+          "error",
+          error instanceof Error ? error.message : "Execution failed",
+        );
         sendEvent("done", "Execution failed");
       } finally {
         if (sandbox) {
@@ -157,7 +168,7 @@ export async function POST(request: NextRequest) {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
+      Connection: "keep-alive",
     },
   });
 }

@@ -2,18 +2,13 @@
 
 /**
  * PromptInput Component
- * 
+ *
  * Input field for entering prompts to generate code artifacts.
  * Includes framework/language preferences and submit functionality.
  */
 
 import { useState, useRef } from "react";
-import { 
-  SparklesIcon, 
-  SettingsIcon,
-  Loader2Icon,
-  SendIcon
-} from "lucide-react";
+import { SettingsIcon, Loader2Icon, SendIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,44 +21,51 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface PromptInputProps {
-  onSubmit: (prompt: string, preferences?: { framework?: string; backend?: string }) => void;
+  onSubmit: (
+    prompt: string,
+    preferences?: { framework?: string; backend?: string },
+  ) => void;
   isGenerating: boolean;
   disabled?: boolean;
 }
 
-export function PromptInput({ onSubmit, isGenerating, disabled }: PromptInputProps) {
+export function PromptInput({
+  onSubmit,
+  isGenerating,
+  disabled,
+}: PromptInputProps) {
   const [prompt, setPrompt] = useState("");
   const [framework, setFramework] = useState<string | undefined>();
   const [backend, setBackend] = useState<string | undefined>();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  
+
   const handleSubmit = () => {
     if (!prompt.trim() || isGenerating || disabled) return;
-    
+
     onSubmit(prompt.trim(), {
       framework,
       backend,
     });
-    
+
     setPrompt("");
   };
-  
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
   };
-  
+
   // Auto-resize textarea
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPrompt(e.target.value);
-    
+
     const textarea = e.target;
     textarea.style.height = "auto";
     textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px";
   };
-  
+
   // Example prompts
   const examples = [
     "Create a React counter component with increment/decrement buttons",
@@ -72,7 +74,7 @@ export function PromptInput({ onSubmit, isGenerating, disabled }: PromptInputPro
     "Write a Node.js server that returns random quotes",
     "Build a CSS animation of a bouncing ball",
   ];
-  
+
   return (
     <div className="border-t bg-background p-4">
       {/* Example prompts */}
@@ -89,7 +91,7 @@ export function PromptInput({ onSubmit, isGenerating, disabled }: PromptInputPro
           ))}
         </div>
       )}
-      
+
       {/* Input area */}
       <div className="flex gap-2">
         <div className="flex-1 relative">
@@ -105,11 +107,11 @@ export function PromptInput({ onSubmit, isGenerating, disabled }: PromptInputPro
               "border bg-background px-4 py-3 pr-24",
               "text-sm placeholder:text-muted-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary/20",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
+              "disabled:opacity-50 disabled:cursor-not-allowed",
             )}
             rows={1}
           />
-          
+
           {/* Preferences button */}
           <div className="absolute right-2 bottom-2 flex gap-1">
             <DropdownMenu>
@@ -140,7 +142,9 @@ export function PromptInput({ onSubmit, isGenerating, disabled }: PromptInputPro
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setFramework("vanilla")}>
-                  <span className={cn(framework === "vanilla" && "font-medium")}>
+                  <span
+                    className={cn(framework === "vanilla" && "font-medium")}
+                  >
                     Vanilla JS {framework === "vanilla" && "✓"}
                   </span>
                 </DropdownMenuItem>
@@ -159,12 +163,17 @@ export function PromptInput({ onSubmit, isGenerating, disabled }: PromptInputPro
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => { setFramework(undefined); setBackend(undefined); }}>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setFramework(undefined);
+                    setBackend(undefined);
+                  }}
+                >
                   Clear preferences
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            
+
             <Button
               size="icon"
               className="h-8 w-8"
@@ -180,7 +189,7 @@ export function PromptInput({ onSubmit, isGenerating, disabled }: PromptInputPro
           </div>
         </div>
       </div>
-      
+
       {/* Active preferences display */}
       {(framework || backend) && (
         <div className="mt-2 flex gap-2">

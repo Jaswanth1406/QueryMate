@@ -468,6 +468,7 @@ Canvas mode enables ChatGPT-style live code previews directly in the chat interf
 - **Tabs**: Switch between Preview, Code, and Console views
 
 **Example Prompts for Canvas:**
+
 ```
 Create a calculator app with a modern dark theme
 Build a Tic-Tac-Toe game with AI opponent
@@ -477,6 +478,7 @@ Build a Pomodoro timer with start, pause, reset
 ```
 
 **How it works:**
+
 1. Enable Canvas mode (purple `<> Canvas` button)
 2. Send a prompt asking for a React component
 3. AI generates complete, self-contained code with Tailwind CSS
@@ -494,6 +496,7 @@ Run Python or JavaScript code in a secure cloud sandbox:
 - **Real-time Output**: See stdout, stderr, and results
 
 **Example Prompts:**
+
 ```
 Write a Python script that generates the first 20 Fibonacci numbers
 Calculate the factorial of 100
@@ -502,6 +505,7 @@ Create a Python script to sort a list using bubble sort
 ```
 
 **Output Display:**
+
 - Code is shown with syntax highlighting
 - Execution results appear below the code
 - Errors are clearly highlighted

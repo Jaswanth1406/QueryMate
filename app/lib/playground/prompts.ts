@@ -59,21 +59,21 @@ export const ARTIFACT_SYSTEM_PROMPT = `You are a code generation AI that ONLY ou
  * Creates a user prompt with proper context
  */
 export function createUserPrompt(
-  prompt: string, 
-  preferences?: { framework?: string; backend?: string }
+  prompt: string,
+  preferences?: { framework?: string; backend?: string },
 ): string {
   let enhancedPrompt = `Create: ${prompt}`;
-  
+
   if (preferences?.framework) {
     enhancedPrompt += `\n\nUse ${preferences.framework} framework.`;
   }
-  
+
   if (preferences?.backend) {
     enhancedPrompt += `\n\nUse ${preferences.backend} for backend.`;
   }
-  
+
   enhancedPrompt += `\n\nRespond with ONLY the JSON artifact. No explanations.`;
-  
+
   return enhancedPrompt;
 }
 
@@ -89,4 +89,3 @@ User's requested changes:
 {USER_REQUEST}
 
 Respond with the complete updated artifact JSON (same schema as before). Include ALL files, not just the changed ones.`;
-
