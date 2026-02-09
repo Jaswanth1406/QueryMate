@@ -252,14 +252,17 @@ function generateReactPreview(
 
   // Combine all JSX into one
   let jsxCode = jsxFiles.map((f) => f.content).join("\n\n");
-  const jsCode = regularJs.length > 0 && jsxFiles !== jsFiles ? regularJs.map((f) => f.content).join("\n") : "";
+  const jsCode =
+    regularJs.length > 0 && jsxFiles !== jsFiles
+      ? regularJs.map((f) => f.content).join("\n")
+      : "";
 
   // Extract the component name - try multiple patterns
   // 1. export default function ComponentName
   // 2. export default ComponentName
   // 3. function ComponentName (without export, common names)
   let componentName = "App";
-  
+
   const exportDefaultMatch = jsxCode.match(
     /export\s+default\s+(?:function\s+)?(\w+)/,
   );
@@ -267,9 +270,7 @@ function generateReactPreview(
     componentName = exportDefaultMatch[1];
   } else {
     // Look for common React component function declarations (PascalCase)
-    const functionMatch = jsxCode.match(
-      /function\s+([A-Z][a-zA-Z0-9]*)\s*\(/,
-    );
+    const functionMatch = jsxCode.match(/function\s+([A-Z][a-zA-Z0-9]*)\s*\(/);
     if (functionMatch) {
       componentName = functionMatch[1];
     } else {
@@ -301,7 +302,7 @@ function generateReactPreview(
     "useSyncExternalStore",
     "useInsertionEffect",
   ];
-  
+
   const usedHooks = reactHooks.filter((hook) => {
     // Check if hook is used as a function call (e.g., useState( or useState<)
     const regex = new RegExp(`\\b${hook}\\s*[(<]`);
@@ -309,10 +310,10 @@ function generateReactPreview(
   });
 
   // Check if hooks are already imported/defined (any of these patterns means we don't need to add hooksSetup)
-  const hasHooksImport = 
-    /const\s*\{[^}]*\}\s*=\s*React/.test(jsxCode) ||                          // const { useState } = React
-    /import\s*\{[^}]*\}\s*from\s*['"]react['"]/.test(jsxCode) ||              // import { useState } from 'react'
-    /import\s+React\s*,\s*\{[^}]*\}\s*from\s*['"]react['"]/.test(jsxCode);    // import React, { useState } from 'react'
+  const hasHooksImport =
+    /const\s*\{[^}]*\}\s*=\s*React/.test(jsxCode) || // const { useState } = React
+    /import\s*\{[^}]*\}\s*from\s*['"]react['"]/.test(jsxCode) || // import { useState } from 'react'
+    /import\s+React\s*,\s*\{[^}]*\}\s*from\s*['"]react['"]/.test(jsxCode); // import React, { useState } from 'react'
 
   // Transform the code for browser compatibility:
   // 1. Replace "import { useState } from 'react'" with destructuring from React global
