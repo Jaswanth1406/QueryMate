@@ -539,6 +539,13 @@ export default function ChatBox({
     let artifactLanguage = "javascript";
     let runCommand: string | null = null;
 
+    // Detect if JavaScript/TypeScript code contains JSX (React components)
+    const hasJsxPatterns =
+      /<[A-Z][a-zA-Z]*[\s/>]/.test(code) || // JSX tags like <App>, <Component>
+      /return\s*\(\s*</.test(code) || // return (<div>...)
+      /React\.createElement/.test(code) || // React.createElement calls
+      /useState|useEffect|useCallback|useRef|useMemo/.test(code); // React hooks
+
     switch (language.toLowerCase()) {
       case "html":
         fileName = "index.html";
@@ -550,8 +557,14 @@ export default function ChatBox({
         break;
       case "javascript":
       case "js":
-        fileName = "script.js";
-        artifactLanguage = "javascript";
+        // Auto-detect React/JSX in JavaScript
+        if (hasJsxPatterns) {
+          fileName = "App.jsx";
+          artifactLanguage = "react";
+        } else {
+          fileName = "script.js";
+          artifactLanguage = "javascript";
+        }
         break;
       case "jsx":
       case "react":
@@ -564,10 +577,16 @@ export default function ChatBox({
         break;
       case "typescript":
       case "ts":
-        fileName = "script.ts";
-        artifactLanguage = "node";
-        artifactType = "backend";
-        runCommand = "npx ts-node script.ts";
+        // Auto-detect React/JSX in TypeScript
+        if (hasJsxPatterns) {
+          fileName = "App.tsx";
+          artifactLanguage = "react";
+        } else {
+          fileName = "script.ts";
+          artifactLanguage = "node";
+          artifactType = "backend";
+          runCommand = "npx ts-node script.ts";
+        }
         break;
       case "python":
       case "py":

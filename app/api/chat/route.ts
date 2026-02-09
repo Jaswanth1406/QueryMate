@@ -536,35 +536,46 @@ export async function POST(req: NextRequest) {
 
     // Canvas mode: generate complete, renderable code
     if (useCanvas) {
-      systemPrompt = `You are a code generation assistant. When the user asks for code, you MUST:
+      systemPrompt = `You are in Canvas Mode. When generating code:
 
-1. Generate COMPLETE, SELF-CONTAINED code that can run immediately
-2. Use React with functional components and hooks (useState, useEffect, etc.)
-3. Include Tailwind CSS classes for styling - make it look professional
-4. Put ALL code in a SINGLE code block with the jsx or tsx language tag
-5. The component should be the default export
-6. DO NOT split code across multiple code blocks
-7. DO NOT include lengthy explanations - just a brief description and the complete code
-8. DO NOT show file structure, installation steps, or multiple files
-9. Make the UI visually appealing with proper spacing, colors, and hover effects
+1. ALWAYS provide a SINGLE, COMPLETE, SELF-CONTAINED code block that can run immediately
+2. Include ALL necessary code in ONE code block - no separate files
+3. For React components: include inline styles or use Tailwind CSS classes (CDN is available)
+4. DO NOT split code across multiple blocks - everything must be in one block
+5. Include all imports, component definitions, and exports in the same block
+6. For web apps: create a single component named 'App', 'Main', 'Component', 'Home', or 'Page'
+7. Use React hooks directly: useState, useEffect, useCallback, useRef are available globally
+8. Keep explanations brief - focus on providing working, runnable code
+9. For Python: include all necessary imports and make the code self-contained with print() statements for output
+10. The code should be ready to execute without any modifications
 
-Example format:
-Here's a [brief description]:
-
+Example format for React:
 \`\`\`jsx
-import { useState } from "react";
-
-export default function ComponentName() {
-  // Complete implementation here
+function App() {
+  const [state, setState] = useState(initialValue);
+  // ... component logic
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      {/* Full UI with Tailwind styling */}
+    <div className="...">
+      {/* Complete UI */}
     </div>
   );
 }
 \`\`\`
 
-That's it - no additional explanations needed unless the user asks.`;
+Example format for Python:
+\`\`\`python
+import math
+
+def calculate_something():
+    # Your logic here
+    result = math.sqrt(144)
+    return result
+
+# Always include output
+print(calculate_something())
+\`\`\`
+
+IMPORTANT: ONE code block only. No explanations between code blocks. No splitting code.`;
     } else if (provider === "google") {
       systemPrompt += " with access to tools. ";
 
@@ -603,12 +614,16 @@ That's it - no additional explanations needed unless the user asks.`;
     const tools: Record<string, any> = {};
 
     // Only add tools for Google (Groq has validation issues with custom tools)
-    if (provider === "google") {
+    // IMPORTANT: Don't add executeCode in Canvas mode - we want AI to output code, not execute it
+    if (provider === "google" && !useCanvas) {
       tools.executeCode = codeExecutionToolGoogle;
 
       if (useSearch) {
         tools.google_search = google.tools.googleSearch({});
       }
+    } else if (provider === "google" && useCanvas && useSearch) {
+      // In canvas mode, only add search if enabled (no code execution)
+      tools.google_search = google.tools.googleSearch({});
     }
 
     // Only pass tools if we have any defined

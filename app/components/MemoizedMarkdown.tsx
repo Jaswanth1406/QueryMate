@@ -37,7 +37,9 @@ function CodeBlock({
     }
   }, [canvas, children, language]);
 
-  // Check if this code is previewable (HTML, CSS, JS, JSX, TSX, React)
+  // Check if this code is previewable/executable
+  // Frontend: HTML, CSS, JS, JSX, TSX, React (preview in browser)
+  // Backend: Python, TypeScript, Node (run in E2B sandbox)
   const isPreviewable = [
     "html",
     "css",
@@ -48,22 +50,34 @@ function CodeBlock({
     "react",
     "typescript",
     "ts",
+    "python",
+    "py",
   ].includes(language.toLowerCase());
+
+  // Backend languages show "Run" button, frontend shows "Preview"
+  const isBackendLanguage = ["python", "py", "typescript", "ts"].includes(
+    language.toLowerCase(),
+  );
 
   return (
     <div className="relative group my-3">
       <div className="flex items-center justify-between bg-zinc-800 dark:bg-zinc-900 text-zinc-400 text-xs px-4 py-2 rounded-t-lg">
         <span>{language || "code"}</span>
         <div className="flex items-center gap-1">
-          {/* Preview button - only show when canvas is open and code is previewable */}
+          {/* Preview/Run button - only show when canvas is open and code is previewable */}
           {canvas?.isCanvasOpen && isPreviewable && (
             <button
               type="button"
-              className="flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-zinc-700 transition-colors text-blue-400 hover:text-blue-300"
+              className={cn(
+                "flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-zinc-700 transition-colors",
+                isBackendLanguage
+                  ? "text-green-400 hover:text-green-300"
+                  : "text-blue-400 hover:text-blue-300",
+              )}
               onClick={handlePreview}
             >
               <EyeIcon className="h-3 w-3" />
-              Preview
+              {isBackendLanguage ? "Run" : "Preview"}
             </button>
           )}
           <button

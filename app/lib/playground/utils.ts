@@ -159,7 +159,11 @@ export function generatePreviewHtml(artifact: Artifact): string {
   const htmlFile = files.find((f) => f.path.endsWith(".html"));
   const cssFiles = files.filter((f) => f.path.endsWith(".css"));
   const jsFiles = files.filter(
-    (f) => f.path.endsWith(".js") || f.path.endsWith(".jsx"),
+    (f) =>
+      f.path.endsWith(".js") ||
+      f.path.endsWith(".jsx") ||
+      f.path.endsWith(".ts") ||
+      f.path.endsWith(".tsx"),
   );
 
   // Combine CSS
@@ -229,20 +233,86 @@ function generateReactPreview(
   css: string,
   jsFiles: ArtifactFile[],
 ): string {
-  // Find React components
-  const jsxFiles = jsFiles.filter((f) => f.path.endsWith(".jsx"));
-  const regularJs = jsFiles.filter((f) => !f.path.endsWith(".jsx"));
+  // Find React components (JSX/TSX files)
+  let jsxFiles = jsFiles.filter(
+    (f) => f.path.endsWith(".jsx") || f.path.endsWith(".tsx"),
+  );
+
+  // Fallback: if no JSX/TSX files, use all JS/TS files (they might contain JSX)
+  if (jsxFiles.length === 0) {
+    jsxFiles = jsFiles;
+  }
+
+  const regularJs = jsFiles.filter(
+    (f) =>
+      !f.path.endsWith(".jsx") &&
+      !f.path.endsWith(".tsx") &&
+      !f.path.endsWith(".ts"),
+  );
 
   // Combine all JSX into one
   let jsxCode = jsxFiles.map((f) => f.content).join("\n\n");
-  const jsCode = regularJs.map((f) => f.content).join("\n");
+  const jsCode = regularJs.length > 0 && jsxFiles !== jsFiles ? regularJs.map((f) => f.content).join("\n") : "";
 
-  // Extract the default exported component name
-  // Matches: export default function ComponentName or export default ComponentName
+  // Extract the component name - try multiple patterns
+  // 1. export default function ComponentName
+  // 2. export default ComponentName
+  // 3. function ComponentName (without export, common names)
+  let componentName = "App";
+  
   const exportDefaultMatch = jsxCode.match(
     /export\s+default\s+(?:function\s+)?(\w+)/,
   );
-  const componentName = exportDefaultMatch ? exportDefaultMatch[1] : "App";
+  if (exportDefaultMatch) {
+    componentName = exportDefaultMatch[1];
+  } else {
+    // Look for common React component function declarations (PascalCase)
+    const functionMatch = jsxCode.match(
+      /function\s+([A-Z][a-zA-Z0-9]*)\s*\(/,
+    );
+    if (functionMatch) {
+      componentName = functionMatch[1];
+    } else {
+      // Look for arrow function components: const App = () =>
+      const arrowMatch = jsxCode.match(
+        /const\s+([A-Z][a-zA-Z0-9]*)\s*=\s*\([^)]*\)\s*=>/,
+      );
+      if (arrowMatch) {
+        componentName = arrowMatch[1];
+      }
+    }
+  }
+
+  // Detect which React hooks are used in the code (even without imports)
+  const reactHooks = [
+    "useState",
+    "useEffect",
+    "useCallback",
+    "useMemo",
+    "useRef",
+    "useContext",
+    "useReducer",
+    "useLayoutEffect",
+    "useImperativeHandle",
+    "useDebugValue",
+    "useDeferredValue",
+    "useTransition",
+    "useId",
+    "useSyncExternalStore",
+    "useInsertionEffect",
+  ];
+  
+  const usedHooks = reactHooks.filter((hook) => {
+    // Check if hook is used as a function call (e.g., useState( or useState<)
+    const regex = new RegExp(`\\b${hook}\\s*[(<]`);
+    return regex.test(jsxCode);
+  });
+
+  // Check if hooks are already imported/defined (any of these patterns means we don't need to add hooksSetup)
+  const hasHooksImport = 
+    /const\s*\{[^}]*\}\s*=\s*React/.test(jsxCode) ||                          // const { useState } = React
+    /import\s*\{[^}]*\}\s*from\s*['"]react['"]/.test(jsxCode) ||              // import { useState } from 'react'
+    /import\s+React\s*,\s*\{[^}]*\}\s*from\s*['"]react['"]/.test(jsxCode);    // import React, { useState } from 'react'
 
   // Transform the code for browser compatibility:
   // 1. Replace "import { useState } from 'react'" with destructuring from React global
@@ -276,6 +346,12 @@ function generateReactPreview(
     // Remove any remaining export statements
     .replace(/export\s+/g, "");
 
+  // Add hooks destructuring at the top if hooks are used but not imported
+  let hooksSetup = "";
+  if (usedHooks.length > 0 && !hasHooksImport) {
+    hooksSetup = `const { ${usedHooks.join(", ")} } = React;\n\n`;
+  }
+
   if (existingHtml) {
     // User provided HTML, enhance it
     return existingHtml;
@@ -294,18 +370,36 @@ function generateReactPreview(
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, -apple-system, sans-serif; }
+    .error-container { padding: 20px; background: #fee2e2; border: 1px solid #ef4444; border-radius: 8px; margin: 20px; }
+    .error-title { color: #dc2626; font-weight: bold; margin-bottom: 8px; }
+    .error-message { color: #991b1b; font-family: monospace; white-space: pre-wrap; }
 ${css}
   </style>
 </head>
 <body>
   <div id="root"></div>
+  <div id="error-display" style="display:none;"></div>
   ${jsCode ? `<script>\n${jsCode}\n</script>` : ""}
-  <script type="text/babel" data-presets="react">
-${jsxCode}
+  <script>
+    // Global error handler
+    window.onerror = function(message, source, lineno, colno, error) {
+      const errorDiv = document.getElementById('error-display');
+      errorDiv.style.display = 'block';
+      errorDiv.innerHTML = '<div class="error-container"><div class="error-title">JavaScript Error</div><div class="error-message">' + message + '</div></div>';
+      return true;
+    };
+  </script>
+  <script type="text/babel" data-presets="react,typescript">
+${hooksSetup}${jsxCode}
 
 // Auto-render the component
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(React.createElement(${componentName}));
+try {
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(React.createElement(${componentName}));
+} catch (error) {
+  document.getElementById('error-display').style.display = 'block';
+  document.getElementById('error-display').innerHTML = '<div class="error-container"><div class="error-title">Render Error</div><div class="error-message">' + error.message + '</div></div>';
+}
   </script>
 </body>
 </html>`;
