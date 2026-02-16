@@ -318,8 +318,9 @@ function generateReactPreview(
   // Transform the code for browser compatibility:
   // 1. Replace "import { useState } from 'react'" with destructuring from React global
   // 2. Remove export default statements
+  // 3. Remove ALL imports (browser script tags don't support ES modules)
   jsxCode = jsxCode
-    // Handle: import { useState, useEffect } from "react" or 'react'
+    // Handle: import { useState, useEffect } from "react" or 'react' - convert to destructuring
     .replace(/import\s*\{([^}]+)\}\s*from\s*['"]react['"];?/g, (_, imports) => {
       const hooks = imports
         .split(",")
@@ -327,9 +328,7 @@ function generateReactPreview(
         .filter(Boolean);
       return `const { ${hooks.join(", ")} } = React;`;
     })
-    // Handle: import React from "react"
-    .replace(/import\s+React\s+from\s*['"]react['"];?/g, "")
-    // Handle: import React, { useState } from "react"
+    // Handle: import React, { useState } from "react" - convert to destructuring
     .replace(
       /import\s+React\s*,\s*\{([^}]+)\}\s*from\s*['"]react['"];?/g,
       (_, imports) => {
@@ -340,6 +339,10 @@ function generateReactPreview(
         return `const { ${hooks.join(", ")} } = React;`;
       },
     )
+    // Remove ALL remaining import statements (CSS, other libraries, etc.)
+    // This must come AFTER the React hook conversions above
+    .replace(/import\s+.*?from\s*['"][^'"]+['"];?\n?/g, "")
+    .replace(/import\s+['"][^'"]+['"];?\n?/g, "")
     // Remove: export default function ComponentName - keep just function ComponentName
     .replace(/export\s+default\s+function\s+/g, "function ")
     // Remove: export default ComponentName (standalone)

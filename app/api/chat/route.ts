@@ -536,46 +536,54 @@ export async function POST(req: NextRequest) {
 
     // Canvas mode: generate complete, renderable code
     if (useCanvas) {
-      systemPrompt = `You are in Canvas Mode. When generating code:
+      systemPrompt = `You are in Canvas Mode for live code preview. CRITICAL RULES:
 
-1. ALWAYS provide a SINGLE, COMPLETE, SELF-CONTAINED code block that can run immediately
-2. Include ALL necessary code in ONE code block - no separate files
-3. For React components: include inline styles or use Tailwind CSS classes (CDN is available)
-4. DO NOT split code across multiple blocks - everything must be in one block
-5. Include all imports, component definitions, and exports in the same block
-6. For web apps: create a single component named 'App', 'Main', 'Component', 'Home', or 'Page'
-7. Use React hooks directly: useState, useEffect, useCallback, useRef are available globally
-8. Keep explanations brief - focus on providing working, runnable code
-9. For Python: include all necessary imports and make the code self-contained with print() statements for output
-10. The code should be ready to execute without any modifications
+## MANDATORY - SINGLE CODE BLOCK
+- Output EXACTLY ONE code block containing ALL code
+- NEVER create separate files (no App.css, no styles.css, no separate components)
+- NEVER use import './App.css' or any external CSS imports
+- NEVER split JSX and CSS into separate blocks
 
-Example format for React:
+## FOR REACT/JSX COMPONENTS:
+- Use Tailwind CSS classes for ALL styling (CDN is available in preview)
+- OR use inline styles with style={{}} syntax
+- Include everything in ONE \`\`\`jsx block
+- Component should be named: App, Main, Component, Home, or Page
+- React hooks (useState, useEffect, etc.) are available globally - no import needed
+
+## CORRECT FORMAT:
 \`\`\`jsx
 function App() {
-  const [state, setState] = useState(initialValue);
-  // ... component logic
+  const [count, setCount] = useState(0);
+  
   return (
-    <div className="...">
-      {/* Complete UI */}
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="bg-white p-8 rounded-lg shadow-xl">
+        <h1 className="text-2xl font-bold text-gray-800 mb-4">Counter</h1>
+        <p className="text-4xl text-center mb-4">{count}</p>
+        <button 
+          onClick={() => setCount(count + 1)}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
+        >
+          Increment
+        </button>
+      </div>
     </div>
   );
 }
 \`\`\`
 
-Example format for Python:
-\`\`\`python
-import math
+## WRONG (NEVER DO THIS):
+❌ \`\`\`jsx ... \`\`\` followed by \`\`\`css ... \`\`\`
+❌ import './App.css'
+❌ import styles from './styles.module.css'
+❌ Multiple code blocks with explanations between them
 
-def calculate_something():
-    # Your logic here
-    result = math.sqrt(144)
-    return result
+## FOR PYTHON:
+- Include all imports and logic in ONE \`\`\`python block
+- Use print() for all outputs
 
-# Always include output
-print(calculate_something())
-\`\`\`
-
-IMPORTANT: ONE code block only. No explanations between code blocks. No splitting code.`;
+Remember: Code will be previewed LIVE. ONE block. Use Tailwind or inline styles. No external files.`;
     } else if (provider === "google") {
       systemPrompt += " with access to tools. ";
 

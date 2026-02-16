@@ -1,12 +1,22 @@
 "use client";
 
 import { marked } from "marked";
-import { memo, useMemo, useState, useCallback } from "react";
+import {
+  memo,
+  useMemo,
+  useState,
+  useCallback,
+  createContext,
+  useContext,
+} from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CopyIcon, CheckIcon, EyeIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCanvas } from "./CanvasContext";
+
+// Context to pass full message content to code blocks
+const MessageContentContext = createContext<string>("");
 
 function parseMarkdownIntoBlocks(markdown: string): string[] {
   const tokens = marked.lexer(markdown);
@@ -24,6 +34,7 @@ function CodeBlock({
   const [copied, setCopied] = useState(false);
   const language = className?.replace("language-", "") || "";
   const canvas = useCanvas();
+  const messageContent = useContext(MessageContentContext);
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(children);
@@ -33,9 +44,10 @@ function CodeBlock({
 
   const handlePreview = useCallback(() => {
     if (canvas) {
-      canvas.showPreview(children, language);
+      // Pass the full message content so we can extract CSS from other blocks
+      canvas.showPreview(children, language, messageContent);
     }
-  }, [canvas, children, language]);
+  }, [canvas, children, language, messageContent]);
 
   // Check if this code is previewable/executable
   // Frontend: HTML, CSS, JS, JSX, TSX, React (preview in browser)
@@ -223,11 +235,16 @@ export const MemoizedMarkdown = memo(
     const blocks = useMemo(() => parseMarkdownIntoBlocks(content), [content]);
 
     return (
-      <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none">
-        {blocks.map((block, index) => (
-          <MemoizedMarkdownBlock content={block} key={`${id}-block_${index}`} />
-        ))}
-      </div>
+      <MessageContentContext.Provider value={content}>
+        <div className="text-sm text-foreground prose prose-sm dark:prose-invert max-w-none">
+          {blocks.map((block, index) => (
+            <MemoizedMarkdownBlock
+              content={block}
+              key={`${id}-block_${index}`}
+            />
+          ))}
+        </div>
+      </MessageContentContext.Provider>
     );
   },
 );

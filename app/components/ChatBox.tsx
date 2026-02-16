@@ -532,83 +532,108 @@ export default function ChatBox({
   }
 
   // Show preview from code block - creates an artifact from raw code
-  const showPreview = useCallback((code: string, language: string) => {
-    // Determine artifact type based on language
-    let artifactType: "frontend" | "backend" | "hybrid" = "frontend";
-    let fileName = "index.js";
-    let artifactLanguage = "javascript";
-    let runCommand: string | null = null;
+  const showPreview = useCallback(
+    (code: string, language: string, messageContent?: string) => {
+      // Determine artifact type based on language
+      let artifactType: "frontend" | "backend" | "hybrid" = "frontend";
+      let fileName = "index.js";
+      let artifactLanguage = "javascript";
+      let runCommand: string | null = null;
 
-    // Detect if JavaScript/TypeScript code contains JSX (React components)
-    const hasJsxPatterns =
-      /<[A-Z][a-zA-Z]*[\s/>]/.test(code) || // JSX tags like <App>, <Component>
-      /return\s*\(\s*</.test(code) || // return (<div>...)
-      /React\.createElement/.test(code) || // React.createElement calls
-      /useState|useEffect|useCallback|useRef|useMemo/.test(code); // React hooks
+      // Detect if JavaScript/TypeScript code contains JSX (React components)
+      const hasJsxPatterns =
+        /<[A-Z][a-zA-Z]*[\s/>]/.test(code) || // JSX tags like <App>, <Component>
+        /return\s*\(\s*</.test(code) || // return (<div>...)
+        /React\.createElement/.test(code) || // React.createElement calls
+        /useState|useEffect|useCallback|useRef|useMemo/.test(code); // React hooks
 
-    switch (language.toLowerCase()) {
-      case "html":
-        fileName = "index.html";
-        artifactLanguage = "html";
-        break;
-      case "css":
-        fileName = "styles.css";
-        artifactLanguage = "css";
-        break;
-      case "javascript":
-      case "js":
-        // Auto-detect React/JSX in JavaScript
-        if (hasJsxPatterns) {
+      switch (language.toLowerCase()) {
+        case "html":
+          fileName = "index.html";
+          artifactLanguage = "html";
+          break;
+        case "css":
+          fileName = "styles.css";
+          artifactLanguage = "css";
+          break;
+        case "javascript":
+        case "js":
+          // Auto-detect React/JSX in JavaScript
+          if (hasJsxPatterns) {
+            fileName = "App.jsx";
+            artifactLanguage = "react";
+          } else {
+            fileName = "script.js";
+            artifactLanguage = "javascript";
+          }
+          break;
+        case "jsx":
+        case "react":
           fileName = "App.jsx";
           artifactLanguage = "react";
-        } else {
-          fileName = "script.js";
-          artifactLanguage = "javascript";
-        }
-        break;
-      case "jsx":
-      case "react":
-        fileName = "App.jsx";
-        artifactLanguage = "react";
-        break;
-      case "tsx":
-        fileName = "App.tsx";
-        artifactLanguage = "react";
-        break;
-      case "typescript":
-      case "ts":
-        // Auto-detect React/JSX in TypeScript
-        if (hasJsxPatterns) {
+          break;
+        case "tsx":
           fileName = "App.tsx";
           artifactLanguage = "react";
-        } else {
-          fileName = "script.ts";
-          artifactLanguage = "node";
+          break;
+        case "typescript":
+        case "ts":
+          // Auto-detect React/JSX in TypeScript
+          if (hasJsxPatterns) {
+            fileName = "App.tsx";
+            artifactLanguage = "react";
+          } else {
+            fileName = "script.ts";
+            artifactLanguage = "node";
+            artifactType = "backend";
+            runCommand = "npx ts-node script.ts";
+          }
+          break;
+        case "python":
+        case "py":
+          fileName = "main.py";
+          artifactLanguage = "python";
           artifactType = "backend";
-          runCommand = "npx ts-node script.ts";
+          runCommand = "python main.py";
+          break;
+      }
+
+      // Build files array
+      const files: { path: string; content: string }[] = [
+        { path: fileName, content: code },
+      ];
+
+      // If this is React/JSX and has CSS import, try to extract CSS from message content
+      if (
+        artifactLanguage === "react" &&
+        messageContent &&
+        /import\s+['"]\.\/.*\.css['"]/.test(code)
+      ) {
+        // Extract CSS code blocks from the message content
+        const cssBlockRegex = /```css\s*([\s\S]*?)```/gi;
+        let cssMatch;
+        while ((cssMatch = cssBlockRegex.exec(messageContent)) !== null) {
+          const cssContent = cssMatch[1].trim();
+          if (cssContent) {
+            files.push({ path: "styles.css", content: cssContent });
+          }
         }
-        break;
-      case "python":
-      case "py":
-        fileName = "main.py";
-        artifactLanguage = "python";
-        artifactType = "backend";
-        runCommand = "python main.py";
-        break;
-    }
+      }
 
-    // Create artifact from code
-    const artifact: Artifact = {
-      artifact_type: artifactType,
-      language: artifactLanguage as Artifact["language"],
-      files: [{ path: fileName, content: code }],
-      run: runCommand,
-    };
+      // Create artifact from code
+      const artifact: Artifact = {
+        artifact_type: artifactType,
+        language: artifactLanguage as Artifact["language"],
+        files: files,
+        run: runCommand,
+      };
 
-    setCanvasArtifact(artifact);
-    setExecutionLogs([]);
-    setExecutionResult(null);
-  }, []);
+      setCanvasArtifact(artifact);
+      setExecutionLogs([]);
+      setExecutionResult(null);
+    },
+    [],
+  );
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.currentTarget.files;
