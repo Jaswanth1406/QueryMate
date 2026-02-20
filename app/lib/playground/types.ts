@@ -39,6 +39,10 @@ export interface Artifact {
   files: ArtifactFile[];
   /** Command to run (for backend/hybrid artifacts) */
   run: string | null;
+  /** Dependencies to install (npm packages with versions) */
+  dependencies?: Record<string, string>;
+  /** CSS code if provided separately */
+  css?: string;
 }
 
 // ============================================================================

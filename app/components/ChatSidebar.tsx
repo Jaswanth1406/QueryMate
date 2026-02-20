@@ -34,7 +34,7 @@ import {
   MessageSquare,
   MoreVertical,
   Zap,
-  Infinity,
+  Infinity as InfinityIcon,
   Download,
   Upload,
   BarChart3,
@@ -734,7 +734,7 @@ export default function ChatSidebar({
                 {/* Perplexity */}
                 <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
                   <div className="flex items-center gap-1">
-                    <Infinity className="w-3 h-3" />
+                    <InfinityIcon className="w-3 h-3" />
                     <span>Perplexity</span>
                   </div>
                   <span className="font-mono text-green-600 dark:text-green-400">
@@ -744,7 +744,7 @@ export default function ChatSidebar({
                 {/* Groq */}
                 <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
                   <div className="flex items-center gap-1">
-                    <Infinity className="w-3 h-3" />
+                    <InfinityIcon className="w-3 h-3" />
                     <span>Groq</span>
                   </div>
                   <span className="font-mono text-green-600 dark:text-green-400">

@@ -37,6 +37,7 @@ import type {
   StreamedExecutionChunk,
   ExecutionResult,
 } from "@/lib/playground/types";
+import { parseDependenciesFromComment } from "@/lib/playground/utils";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -621,11 +622,26 @@ export default function ChatBox({
       }
 
       // Create artifact from code
+      // Parse dependencies from DEPENDENCIES comment in code
+      const dependencies = parseDependenciesFromComment(code);
+
+      // Also extract CSS if provided separately
+      let extractedCss = "";
+      if (files.length > 1) {
+        const cssFile = files.find((f) => f.path.endsWith(".css"));
+        if (cssFile) {
+          extractedCss = cssFile.content;
+        }
+      }
+
       const artifact: Artifact = {
         artifact_type: artifactType,
         language: artifactLanguage as Artifact["language"],
         files: files,
         run: runCommand,
+        dependencies:
+          Object.keys(dependencies).length > 0 ? dependencies : undefined,
+        css: extractedCss || undefined,
       };
 
       setCanvasArtifact(artifact);
@@ -799,7 +815,6 @@ export default function ChatBox({
                           {msg.imageUrls && msg.imageUrls.length > 0 && (
                             <div className="mt-2 flex gap-2 flex-wrap">
                               {msg.imageUrls.map((url, idx) => (
-                                // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   key={idx}
                                   src={url}

@@ -5,6 +5,7 @@
  *
  * ChatGPT-style canvas that appears alongside chat.
  * Shows code preview with resizable split view.
+ * Supports both CDN-based preview (fast) and WebContainer preview (real npm).
  */
 
 import { useState, useRef, useCallback, useEffect } from "react";
@@ -18,6 +19,7 @@ import {
   DownloadIcon,
   RefreshCwIcon,
   TerminalIcon,
+  BoxIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,8 @@ import type {
   ExecutionResult,
 } from "@/lib/playground/types";
 import { generatePreviewHtml } from "@/lib/playground/utils";
+import { WebContainerPreview } from "@/components/WebContainerPreview";
+import { isWebContainerSupported } from "@/lib/playground/webcontainer";
 
 interface CodeCanvasProps {
   artifact: Artifact;
@@ -38,6 +42,7 @@ interface CodeCanvasProps {
 }
 
 type TabType = "code" | "preview" | "console";
+type PreviewMode = "cdn" | "webcontainer";
 
 export function CodeCanvas({
   artifact,
@@ -62,9 +67,27 @@ export function CodeCanvas({
   const [previewKey, setPreviewKey] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Preview mode: CDN (fast, limited packages) or WebContainer (real npm)
+  const [previewMode, setPreviewMode] = useState<PreviewMode>("cdn");
+  const [webContainerSupported, setWebContainerSupported] = useState(false);
+
+  // Check WebContainer support
+  useEffect(() => {
+    setWebContainerSupported(isWebContainerSupported());
+  }, []);
+
   const currentFile = artifact.files[selectedFileIndex];
   const isBackend = isBackendType;
   const isFrontend = isFrontendType;
+
+  // Get the main code file content
+  const mainCodeFile = artifact.files.find(
+    (f) =>
+      f.path.endsWith(".jsx") ||
+      f.path.endsWith(".tsx") ||
+      f.path.endsWith(".js"),
+  );
+  const mainCode = mainCodeFile?.content || "";
 
   // Generate preview HTML
   const previewHtml = isFrontend ? generatePreviewHtml(artifact) : "";
@@ -206,14 +229,46 @@ export function CodeCanvas({
 
         {/* Action buttons */}
         {activeTab === "preview" && isFrontend && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-700"
-            onClick={handleRefresh}
-          >
-            <RefreshCwIcon className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {/* Preview mode toggle */}
+            {webContainerSupported && (
+              <div className="flex items-center bg-zinc-800 rounded-md p-0.5 mr-2">
+                <button
+                  onClick={() => setPreviewMode("cdn")}
+                  className={cn(
+                    "px-2 py-1 text-xs rounded transition-colors",
+                    previewMode === "cdn"
+                      ? "bg-zinc-600 text-white"
+                      : "text-zinc-400 hover:text-white",
+                  )}
+                  title="Fast CDN preview (limited packages)"
+                >
+                  Fast
+                </button>
+                <button
+                  onClick={() => setPreviewMode("webcontainer")}
+                  className={cn(
+                    "px-2 py-1 text-xs rounded transition-colors flex items-center gap-1",
+                    previewMode === "webcontainer"
+                      ? "bg-zinc-600 text-white"
+                      : "text-zinc-400 hover:text-white",
+                  )}
+                  title="Full npm support via WebContainer"
+                >
+                  <BoxIcon className="w-3 h-3" />
+                  npm
+                </button>
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-700"
+              onClick={handleRefresh}
+            >
+              <RefreshCwIcon className="w-4 h-4" />
+            </Button>
+          </div>
         )}
         {isBackend && (
           <Button
@@ -234,14 +289,24 @@ export function CodeCanvas({
         {/* Preview Tab */}
         {activeTab === "preview" && isFrontend && (
           <div className="h-full bg-white">
-            <iframe
-              key={previewKey}
-              ref={iframeRef}
-              srcDoc={previewHtml}
-              sandbox="allow-scripts allow-modals"
-              className="w-full h-full border-0"
-              title="Preview"
-            />
+            {previewMode === "webcontainer" ? (
+              <WebContainerPreview
+                key={previewKey}
+                code={mainCode}
+                css={artifact.css}
+                dependencies={artifact.dependencies}
+                className="h-full"
+              />
+            ) : (
+              <iframe
+                key={previewKey}
+                ref={iframeRef}
+                srcDoc={previewHtml}
+                sandbox="allow-scripts allow-modals allow-same-origin"
+                className="w-full h-full border-0"
+                title="Preview"
+              />
+            )}
           </div>
         )}
 

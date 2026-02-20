@@ -536,54 +536,99 @@ export async function POST(req: NextRequest) {
 
     // Canvas mode: generate complete, renderable code
     if (useCanvas) {
-      systemPrompt = `You are in Canvas Mode for live code preview. CRITICAL RULES:
+      systemPrompt = `You are in Canvas Mode for live code preview.
 
-## MANDATORY - SINGLE CODE BLOCK
-- Output EXACTLY ONE code block containing ALL code
-- NEVER create separate files (no App.css, no styles.css, no separate components)
-- NEVER use import './App.css' or any external CSS imports
-- NEVER split JSX and CSS into separate blocks
+## CRITICAL: ALWAYS USE TAILWIND CSS FOR STYLING
+Your code MUST look professional with proper styling. Use Tailwind CSS classes on EVERY element.
 
-## FOR REACT/JSX COMPONENTS:
-- Use Tailwind CSS classes for ALL styling (CDN is available in preview)
-- OR use inline styles with style={{}} syntax
-- Include everything in ONE \`\`\`jsx block
-- Component should be named: App, Main, Component, Home, or Page
-- React hooks (useState, useEffect, etc.) are available globally - no import needed
+### MANDATORY STYLING REQUIREMENTS:
+- Every container: Use bg-*, p-*, m-*, rounded-*, shadow-* classes
+- Every button: Use bg-*, hover:bg-*, text-*, px-*, py-*, rounded-* classes  
+- Every input: Use border, rounded-*, p-*, focus:ring-*, focus:border-* classes
+- Layout: Use flex, grid, gap-*, items-center, justify-center, min-h-screen
+- Typography: Use text-*, font-*, leading-*, tracking-*
 
-## CORRECT FORMAT:
+### EXAMPLE - Calculator with PROPER styling:
 \`\`\`jsx
-function App() {
-  const [count, setCount] = useState(0);
-  
+function Calculator() {
+  const [num1, setNum1] = useState('');
+  const [num2, setNum2] = useState('');
+  const [result, setResult] = useState(null);
+  const [operator, setOperator] = useState('+');
+
+  const calculate = () => {
+    const a = parseFloat(num1);
+    const b = parseFloat(num2);
+    let res;
+    switch(operator) {
+      case '+': res = a + b; break;
+      case '-': res = a - b; break;
+      case '*': res = a * b; break;
+      case '/': res = b !== 0 ? a / b : 'Error'; break;
+    }
+    setResult(res);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-xl">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Counter</h1>
-        <p className="text-4xl text-center mb-4">{count}</p>
-        <button 
-          onClick={() => setCount(count + 1)}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
-        >
-          Increment
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <h1 className="text-3xl font-bold text-gray-800 text-center mb-6">Calculator</h1>
+        <div className="space-y-4">
+          <input
+            type="number"
+            value={num1}
+            onChange={(e) => setNum1(e.target.value)}
+            placeholder="First number"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition"
+          />
+          <select
+            value={operator}
+            onChange={(e) => setOperator(e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 bg-white"
+          >
+            <option value="+">+ Add</option>
+            <option value="-">- Subtract</option>
+            <option value="*">× Multiply</option>
+            <option value="/">÷ Divide</option>
+          </select>
+          <input
+            type="number"
+            value={num2}
+            onChange={(e) => setNum2(e.target.value)}
+            placeholder="Second number"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition"
+          />
+          <button
+            onClick={calculate}
+            className="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white font-semibold py-3 rounded-lg hover:from-purple-700 hover:to-blue-600 transform hover:scale-105 transition shadow-lg"
+          >
+            Calculate
+          </button>
+          {result !== null && (
+            <div className="mt-4 p-4 bg-gray-100 rounded-lg text-center">
+              <span className="text-gray-600">Result:</span>
+              <span className="ml-2 text-2xl font-bold text-purple-600">{result}</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 \`\`\`
 
-## WRONG (NEVER DO THIS):
-❌ \`\`\`jsx ... \`\`\` followed by \`\`\`css ... \`\`\`
-❌ import './App.css'
-❌ import styles from './styles.module.css'
-❌ Multiple code blocks with explanations between them
+### RULES:
+- ONE code block only
+- Use Tailwind classes on EVERY element (no unstyled HTML)
+- Name component: App, Calculator, Main, etc.
+- React hooks are available globally (no import needed)
+- NO separate CSS files, NO import './App.css'
 
-## FOR PYTHON:
-- Include all imports and logic in ONE \`\`\`python block
-- Use print() for all outputs
+### FOR EXTERNAL PACKAGES:
+Add comment: // DEPENDENCIES: framer-motion, lucide-react
+Then import normally.
 
-Remember: Code will be previewed LIVE. ONE block. Use Tailwind or inline styles. No external files.`;
+Your code will be previewed LIVE. Make it look PROFESSIONAL with Tailwind.`;
     } else if (provider === "google") {
       systemPrompt += " with access to tools. ";
 

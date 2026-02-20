@@ -10,6 +10,61 @@ import type {
 } from "./types";
 
 /**
+ * Parse DEPENDENCIES comment from code
+ * Format: // DEPENDENCIES: framer-motion, lucide-react, recharts
+ */
+export function parseDependenciesFromComment(
+  code: string,
+): Record<string, string> {
+  const deps: Record<string, string> = {};
+
+  // Match: // DEPENDENCIES: pkg1, pkg2, pkg3
+  const match = code.match(/\/\/\s*DEPENDENCIES:\s*(.+)/i);
+  if (match) {
+    const packages = match[1]
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    for (const pkg of packages) {
+      // Handle version specifier: pkg@1.0.0
+      if (pkg.includes("@") && !pkg.startsWith("@")) {
+        const [name, version] = pkg.split("@");
+        deps[name] = version || "latest";
+      } else {
+        deps[pkg] = "latest";
+      }
+    }
+  }
+
+  return deps;
+}
+
+/**
+ * Check if code uses external npm packages (beyond React)
+ */
+export function hasExternalDependencies(code: string): boolean {
+  // Check for DEPENDENCIES comment
+  if (/\/\/\s*DEPENDENCIES:/i.test(code)) {
+    return true;
+  }
+
+  // Check for imports from non-react packages
+  const importRegex =
+    /import\s+(?:[\w\s{},*]+\s+from\s+)?['"]([^'"./][^'"]*)['"]/g;
+  let match;
+
+  while ((match = importRegex.exec(code)) !== null) {
+    const pkg = match[1];
+    // Ignore react and react-dom
+    if (pkg !== "react" && pkg !== "react-dom" && !pkg.startsWith("react/")) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Parse LLM output into an Artifact object
  * Handles potential JSON parsing issues
  */
@@ -369,19 +424,38 @@ function generateReactPreview(
   <title>React Preview</title>
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+  <!-- Use Twind (Tailwind-in-JS) - works with COEP headers unlike Tailwind CDN -->
+  <script type="module">
+    import { install, injectGlobal } from 'https://esm.sh/@twind/core@1.1.3';
+    import presetTailwind from 'https://esm.sh/@twind/preset-tailwind@1.1.4';
+    import presetAutoprefix from 'https://esm.sh/@twind/preset-autoprefix@1.0.7';
+    
+    install({
+      presets: [presetAutoprefix(), presetTailwind()],
+      hash: false,
+    });
+    
+    // Add base styles
+    injectGlobal\`
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: system-ui, -apple-system, sans-serif; min-height: 100vh; }
+      #root { min-height: 100vh; }
+    \`;
+    
+    // Signal that Twind is ready
+    window.twindReady = true;
+    window.dispatchEvent(new Event('twind-ready'));
+  </script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; }
     .error-container { padding: 20px; background: #fee2e2; border: 1px solid #ef4444; border-radius: 8px; margin: 20px; }
     .error-title { color: #dc2626; font-weight: bold; margin-bottom: 8px; }
     .error-message { color: #991b1b; font-family: monospace; white-space: pre-wrap; }
 ${css}
   </style>
 </head>
-<body>
-  <div id="root"></div>
+<body class="min-h-screen">
+  <div id="root" class="min-h-screen"></div>
   <div id="error-display" style="display:none;"></div>
   ${jsCode ? `<script>\n${jsCode}\n</script>` : ""}
   <script>
@@ -396,13 +470,26 @@ ${css}
   <script type="text/babel" data-presets="react,typescript">
 ${hooksSetup}${jsxCode}
 
-// Auto-render the component
-try {
-  const root = ReactDOM.createRoot(document.getElementById('root'));
-  root.render(React.createElement(${componentName}));
-} catch (error) {
-  document.getElementById('error-display').style.display = 'block';
-  document.getElementById('error-display').innerHTML = '<div class="error-container"><div class="error-title">Render Error</div><div class="error-message">' + error.message + '</div></div>';
+// Auto-render the component, waiting for Twind to be ready
+function renderApp() {
+  try {
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(${componentName}));
+  } catch (error) {
+    document.getElementById('error-display').style.display = 'block';
+    document.getElementById('error-display').innerHTML = '<div class="error-container"><div class="error-title">Render Error</div><div class="error-message">' + error.message + '</div></div>';
+  }
+}
+
+// Wait for Twind to initialize before rendering
+if (window.twindReady) {
+  renderApp();
+} else {
+  window.addEventListener('twind-ready', renderApp);
+  // Fallback: render anyway after 1 second if Twind takes too long
+  setTimeout(function() {
+    if (!window.twindReady) renderApp();
+  }, 1000);
 }
   </script>
 </body>

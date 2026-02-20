@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^3.0.59",
@@ -32,6 +32,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@supabase/supabase-js": "^2.84.0",
+    "@webcontainer/api": "^1.6.1",
     "@xyflow/react": "^12.9.3",
     "ai": "^5.0.106",
     "ai-elements": "^1.6.3",
@@ -42,12 +43,12 @@
     "cmdk": "^1.1.1",
     "drizzle-orm": "^0.44.7",
     "embla-carousel-react": "^8.6.0",
-    "jspdf": "^3.0.4",
+    "jspdf": "^4.2.0",
     "lucide-react": "^0.554.0",
     "marked": "^17.0.1",
     "motion": "^12.23.25",
     "nanoid": "^5.1.6",
-    "next": "16.0.7",
+    "next": "^16.1.6",
     "next-themes": "^0.4.6",
     "pg": "^8.16.3",
     "postcss": "^8.4.30",
@@ -67,14 +68,20 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.15.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "drizzle-kit": "^0.31.7",
-    "eslint": "^9",
-    "eslint-config-next": "16.0.7",
+    "@typescript-eslint/eslint-plugin": "^8.56.0",
+    "@typescript-eslint/parser": "^8.56.0",
+    "drizzle-kit": "^0.31.9",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "^16.1.6",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "lodash": "^4.17.23",
     "tailwindcss": "^3.3.3",
     "typescript": "^5"
   }
