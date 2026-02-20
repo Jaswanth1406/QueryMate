@@ -34,10 +34,10 @@ const laxRateLimitSettings = {
   interval: "1m",
 } satisfies SlidingWindowRateLimitOptions<[]>;
 
-const emailSettings = {
+const emailSettings: EmailOptions = {
   mode: "LIVE",
-  block: ["DISPOSABLE", "INVALID", "NO_MX_RECORDS"],
-} satisfies EmailOptions;
+  deny: ["DISPOSABLE", "INVALID", "NO_MX_RECORDS"],
+};
 
 const authHandlers = toNextJsHandler(auth);
 export const { GET } = authHandlers;
