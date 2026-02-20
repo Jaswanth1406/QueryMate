@@ -538,8 +538,27 @@ export async function POST(req: NextRequest) {
     if (useCanvas) {
       systemPrompt = `You are in Canvas Mode for live code preview.
 
+## OUTPUT FORMAT - EXTREMELY IMPORTANT:
+You MUST wrap your code in a markdown code fence with the language tag:
+\`\`\`jsx
+// your code here
+\`\`\`
+
+NEVER output raw code without the \`\`\`jsx wrapper. The preview system ONLY detects code inside markdown code blocks.
+
 ## CRITICAL: ALWAYS USE TAILWIND CSS FOR STYLING
 Your code MUST look professional with proper styling. Use Tailwind CSS classes on EVERY element.
+
+### MANDATORY RULES:
+1. Generate ONE complete code block only (jsx or tsx)
+2. ALWAYS include ALL import statements at the top:
+   - import { useState, useEffect, ... } from 'react';
+   - import any external packages you use
+3. ALWAYS export the component: export default function ComponentName()
+4. Use Tailwind classes on EVERY element (no unstyled HTML)
+5. NO separate CSS files
+6. If using external npm packages, add this comment at the VERY TOP of your code:
+   // DEPENDENCIES: package1, package2
 
 ### MANDATORY STYLING REQUIREMENTS:
 - Every container: Use bg-*, p-*, m-*, rounded-*, shadow-* classes
@@ -550,66 +569,72 @@ Your code MUST look professional with proper styling. Use Tailwind CSS classes o
 
 ### EXAMPLE - Calculator with PROPER styling:
 \`\`\`jsx
-function Calculator() {
-  const [num1, setNum1] = useState('');
-  const [num2, setNum2] = useState('');
-  const [result, setResult] = useState(null);
-  const [operator, setOperator] = useState('+');
+// DEPENDENCIES: framer-motion
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 
-  const calculate = () => {
-    const a = parseFloat(num1);
-    const b = parseFloat(num2);
-    let res;
-    switch(operator) {
-      case '+': res = a + b; break;
-      case '-': res = a - b; break;
-      case '*': res = a * b; break;
-      case '/': res = b !== 0 ? a / b : 'Error'; break;
-    }
-    setResult(res);
+export default function Calculator() {
+  const [display, setDisplay] = useState('0');
+  const [prevValue, setPrevValue] = useState(null);
+  const [operator, setOperator] = useState(null);
+
+  const handleNumber = (num) => {
+    setDisplay(prev => prev === '0' ? num : prev + num);
   };
 
+  const handleOperator = (op) => {
+    setPrevValue(parseFloat(display));
+    setOperator(op);
+    setDisplay('0');
+  };
+
+  const calculate = () => {
+    const current = parseFloat(display);
+    let result = 0;
+    switch(operator) {
+      case '+': result = prevValue + current; break;
+      case '-': result = prevValue - current; break;
+      case '*': result = prevValue * current; break;
+      case '/': result = prevValue / current; break;
+    }
+    setDisplay(String(result));
+    setPrevValue(null);
+    setOperator(null);
+  };
+
+  const clear = () => { setDisplay('0'); setPrevValue(null); setOperator(null); };
+  const buttons = ['7','8','9','/','4','5','6','*','1','2','3','-','0','C','=','+'];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-gray-800 text-center mb-6">Calculator</h1>
-        <div className="space-y-4">
-          <input
-            type="number"
-            value={num1}
-            onChange={(e) => setNum1(e.target.value)}
-            placeholder="First number"
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition"
-          />
-          <select
-            value={operator}
-            onChange={(e) => setOperator(e.target.value)}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 bg-white"
-          >
-            <option value="+">+ Add</option>
-            <option value="-">- Subtract</option>
-            <option value="*">× Multiply</option>
-            <option value="/">÷ Divide</option>
-          </select>
-          <input
-            type="number"
-            value={num2}
-            onChange={(e) => setNum2(e.target.value)}
-            placeholder="Second number"
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition"
-          />
-          <button
-            onClick={calculate}
-            className="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white font-semibold py-3 rounded-lg hover:from-purple-700 hover:to-blue-600 transform hover:scale-105 transition shadow-lg"
-          >
-            Calculate
-          </button>
-          {result !== null && (
-            <div className="mt-4 p-4 bg-gray-100 rounded-lg text-center">
-              <span className="text-gray-600">Result:</span>
-              <span className="ml-2 text-2xl font-bold text-purple-600">{result}</span>
-            </div>
-          )}
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+      <div className="bg-gray-900/80 backdrop-blur-xl rounded-3xl p-6 shadow-2xl border border-white/10 w-80">
+        <div className="bg-gray-800 rounded-2xl p-4 mb-4 text-right">
+          <div className="text-gray-400 text-sm h-6">{prevValue} {operator}</div>
+          <div className="text-white text-4xl font-light tracking-wider">{display}</div>
+        </div>
+        <div className="grid grid-cols-4 gap-3">
+          {buttons.map((btn) => (
+            <motion.button
+              key={btn}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                if (btn === 'C') clear();
+                else if (btn === '=') calculate();
+                else if (['+','-','*','/'].includes(btn)) handleOperator(btn);
+                else handleNumber(btn);
+              }}
+              className={\`p-4 rounded-xl text-xl font-semibold \${
+                ['+','-','*','/'].includes(btn)
+                  ? 'bg-orange-500 hover:bg-orange-400 text-white'
+                  : btn === '=' ? 'bg-green-500 hover:bg-green-400 text-white'
+                  : btn === 'C' ? 'bg-red-500 hover:bg-red-400 text-white'
+                  : 'bg-gray-700 hover:bg-gray-600 text-white'
+              }\`}
+            >
+              {btn}
+            </motion.button>
+          ))}
         </div>
       </div>
     </div>
@@ -617,18 +642,15 @@ function Calculator() {
 }
 \`\`\`
 
-### RULES:
-- ONE code block only
-- Use Tailwind classes on EVERY element (no unstyled HTML)
-- Name component: App, Calculator, Main, etc.
-- React hooks are available globally (no import needed)
-- NO separate CSS files, NO import './App.css'
+### KEY POINTS:
+- ALWAYS start with imports (import { useState } from 'react')
+- ALWAYS use export default function ComponentName()
+- Use Unicode characters (✕, ←, ÷, ×) instead of icon libraries when possible
+- If you MUST use icon packages, add // DEPENDENCIES: package-name at the top and import them
+- Make it look PROFESSIONAL with Tailwind gradients, shadows, and hover effects
 
-### FOR EXTERNAL PACKAGES:
-Add comment: // DEPENDENCIES: framer-motion, lucide-react
-Then import normally.
-
-Your code will be previewed LIVE. Make it look PROFESSIONAL with Tailwind.`;
+Your code will be previewed LIVE. Do NOT ask questions. Generate COMPLETE, working code.
+REMEMBER: Wrap ALL code in \`\`\`jsx code fences. No raw code outside of code blocks.`;
     } else if (provider === "google") {
       systemPrompt += " with access to tools. ";
 
