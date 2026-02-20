@@ -48,23 +48,23 @@ export const MODELS: Record<string, ModelConfig> = {
     },
     supportsTokenUsage: true,
   },
-  // Perplexity Models
-  sonar: {
-    id: "sonar",
-    name: "Sonar",
-    provider: "perplexity",
-    modelId: "sonar",
-    description: "Web-connected AI search",
-    supportsTokenUsage: false,
-  },
-  "sonar-pro": {
-    id: "sonar-pro",
-    name: "Sonar Pro",
-    provider: "perplexity",
-    modelId: "sonar-pro",
-    description: "Advanced web-connected AI",
-    supportsTokenUsage: false,
-  },
+  // Perplexity Models (disabled - no credits)
+  // sonar: {
+  //   id: "sonar",
+  //   name: "Sonar",
+  //   provider: "perplexity",
+  //   modelId: "sonar",
+  //   description: "Web-connected AI search",
+  //   supportsTokenUsage: false,
+  // },
+  // "sonar-pro": {
+  //   id: "sonar-pro",
+  //   name: "Sonar Pro",
+  //   provider: "perplexity",
+  //   modelId: "sonar-pro",
+  //   description: "Advanced web-connected AI",
+  //   supportsTokenUsage: false,
+  // },
 
   // Groq Models (Free Tier)
   "llama-3.3-70b": {
@@ -155,7 +155,7 @@ export const MODELS: Record<string, ModelConfig> = {
 
 // Group models by provider for UI
 export const MODEL_GROUPS: Record<
-  Provider,
+  string,
   { name: string; icon: string; models: string[] }
 > = {
   google: {
@@ -163,11 +163,11 @@ export const MODEL_GROUPS: Record<
     icon: "🧠",
     models: ["gemini-2.5-flash", "gemini-2.5-flash-lite"],
   },
-  perplexity: {
-    name: "Perplexity",
-    icon: "🔍",
-    models: ["sonar", "sonar-pro"],
-  },
+  // perplexity: {
+  //   name: "Perplexity",
+  //   icon: "🔍",
+  //   models: ["sonar", "sonar-pro"],
+  // },
   groq: {
     name: "Groq",
     icon: "⚡",
