@@ -370,6 +370,23 @@ function generateReactPreview(
     /import\s*\{[^}]*\}\s*from\s*['"]react['"]/.test(jsxCode) || // import { useState } from 'react'
     /import\s+React\s*,\s*\{[^}]*\}\s*from\s*['"]react['"]/.test(jsxCode); // import React, { useState } from 'react'
 
+  // Detect external (non-react) npm package imports BEFORE stripping
+  const externalImportRegex =
+    /import\s+(?:[\w\s{},*]+\s+from\s+)?['"]([^'"./@][^'"]*)['"];?/g;
+  const externalPackages: string[] = [];
+  let extMatch;
+  while ((extMatch = externalImportRegex.exec(jsxCode)) !== null) {
+    const pkg = extMatch[1];
+    const basePkg = pkg.startsWith("@")
+      ? pkg.split("/").slice(0, 2).join("/")
+      : pkg.split("/")[0];
+    if (basePkg !== "react" && basePkg !== "react-dom") {
+      externalPackages.push(basePkg);
+    }
+  }
+  const hasNpmPackages = externalPackages.length > 0;
+  const uniqueExternalPackages = [...new Set(externalPackages)];
+
   // Transform the code for browser compatibility:
   // 1. Replace "import { useState } from 'react'" with destructuring from React global
   // 2. Remove export default statements
@@ -414,6 +431,74 @@ function generateReactPreview(
   if (existingHtml) {
     // User provided HTML, enhance it
     return existingHtml;
+  }
+
+  // If external npm packages are detected, show an error message instead of a blank screen
+  const npmPackageWarningHtml = hasNpmPackages
+    ? `<div id="npm-package-warning" style="
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        min-height: 100vh; padding: 32px; background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+        font-family: system-ui, -apple-system, sans-serif; color: #e2e8f0;
+      ">
+        <div style="
+          max-width: 480px; width: 100%; background: rgba(30, 41, 59, 0.8);
+          border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 16px;
+          padding: 32px; text-align: center; backdrop-filter: blur(12px);
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        ">
+          <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+          <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #f1f5f9;">
+            npm Packages Required
+          </h2>
+          <p style="font-size: 14px; color: #94a3b8; margin-bottom: 20px; line-height: 1.6;">
+            This component uses packages that aren&apos;t available in Fast mode:
+          </p>
+          <div style="
+            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 24px;
+          ">
+            ${uniqueExternalPackages
+              .map(
+                (pkg) => `<span style="
+              background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3);
+              color: #a5b4fc; padding: 4px 12px; border-radius: 20px; font-size: 13px;
+              font-family: ui-monospace, monospace;
+            ">${pkg}</span>`,
+              )
+              .join("\n            ")}
+          </div>
+          <p style="font-size: 14px; color: #cbd5e1; line-height: 1.6; margin-bottom: 24px;">
+            Switch to <strong style="color: #a5b4fc;">npm mode</strong> to install real packages
+            and see the full preview with all features.
+          </p>
+          <div style="
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.4);
+            padding: 10px 20px; border-radius: 8px; font-size: 13px; color: #c7d2fe;
+          ">
+            <span>Click</span>
+            <span style="
+              background: #4f46e5; color: white; padding: 2px 8px; border-radius: 4px;
+              font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;
+            ">📦 npm</span>
+            <span>in the toolbar above</span>
+          </div>
+        </div>
+      </div>`
+    : "";
+
+  // If npm packages are detected, return the warning page directly
+  if (hasNpmPackages) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React Preview</title>
+</head>
+<body style="margin: 0;">
+  ${npmPackageWarningHtml}
+</body>
+</html>`;
   }
 
   return `<!DOCTYPE html>

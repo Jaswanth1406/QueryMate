@@ -11,7 +11,11 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cross-Origin-Embedder-Policy",
-            value: "require-corp",
+            // Use 'credentialless' instead of 'require-corp' so that
+            // cross-origin iframes (WebContainer preview) can load
+            // without needing CORP headers, while still enabling
+            // crossOriginIsolated (SharedArrayBuffer) for WebContainers.
+            value: "credentialless",
           },
           {
             key: "Cross-Origin-Opener-Policy",
