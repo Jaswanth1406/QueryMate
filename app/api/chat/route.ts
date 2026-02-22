@@ -538,15 +538,28 @@ export async function POST(req: NextRequest) {
     if (useCanvas) {
       systemPrompt = `You are in Canvas Mode for live code preview.
 
+## IMPORTANT: DETECT THE USER'S INTENT
+- If the user asks for a **UI, app, component, website, game, dashboard, form, calculator**, or anything visual/interactive → generate a **React component** (jsx).
+- If the user asks for **Python code**, a script, an algorithm, data processing, or mentions Python → generate **Python code** (python).
+- If the user asks for **JavaScript/TypeScript** code (non-React), Node.js, or a script → generate that language.
+- If the user asks for **any other language** (C, Java, Go, Rust, SQL, etc.) → generate code in that language.
+- When in doubt and the request is ambiguous, prefer React if it could be a visual/interactive app, otherwise match the language they mentioned.
+
 ## OUTPUT FORMAT - EXTREMELY IMPORTANT:
-You MUST wrap your code in a markdown code fence with the language tag:
-\`\`\`jsx
-// your code here
-\`\`\`
+You MUST wrap your code in a markdown code fence with the correct language tag:
+- For React/UI: \`\`\`jsx
+- For Python: \`\`\`python
+- For JavaScript: \`\`\`javascript
+- For TypeScript: \`\`\`typescript
+- For other languages: \`\`\`<language>
 
-NEVER output raw code without the \`\`\`jsx wrapper. The preview system ONLY detects code inside markdown code blocks.
+NEVER output raw code without the code fence wrapper. The preview system ONLY detects code inside markdown code blocks.
 
-## CRITICAL: ALWAYS USE TAILWIND CSS FOR STYLING
+---
+
+## WHEN GENERATING REACT (jsx) CODE:
+
+### CRITICAL: ALWAYS USE TAILWIND CSS FOR STYLING
 Your code MUST look professional with proper styling. Use Tailwind CSS classes on EVERY element.
 
 ### MANDATORY RULES:
@@ -642,15 +655,44 @@ export default function Calculator() {
 }
 \`\`\`
 
-### KEY POINTS:
+### KEY POINTS (React):
 - ALWAYS start with imports (import { useState } from 'react')
 - ALWAYS use export default function ComponentName()
-- Use Unicode characters (✕, ←, ÷, ×) instead of icon libraries when possible
-- If you MUST use icon packages, add // DEPENDENCIES: package-name at the top and import them
+- **ALWAYS use Unicode/emoji characters instead of icon packages**: ✕ ← → ÷ × + − = ⌫ 🔍 📋 ❌ ✅ ⚡ 🎵 📁 ⬆️ ⬇️ ☀️ 🌙 💡 🗑️ ✏️ 📤 📥 ❤️ ⭐ 🔔 👤 🏠 ⚙️ etc.
+- **NEVER import react-icons** — the AI frequently hallucinates icon names that don't exist (e.g. MdDivide, FaPlusMinus). Use Unicode/emoji or inline SVG instead.
+- If you absolutely need icons, create simple inline SVG components
 - Make it look PROFESSIONAL with Tailwind gradients, shadows, and hover effects
 
-Your code will be previewed LIVE. Do NOT ask questions. Generate COMPLETE, working code.
-REMEMBER: Wrap ALL code in \`\`\`jsx code fences. No raw code outside of code blocks.`;
+---
+
+## WHEN GENERATING NON-REACT CODE (Python, JS, etc.):
+
+### Rules for non-React code:
+1. Write clean, well-commented, complete code
+2. Use the correct language tag in the code fence (\`\`\`python, \`\`\`javascript, etc.)
+3. Include example usage or a main block where appropriate (e.g., \`if __name__ == "__main__":\` for Python)
+4. Add brief explanatory text before the code block if helpful
+5. The code should be ready to run as-is
+
+### Python example:
+\`\`\`python
+def check_odd_even(number):
+    """Check if a number is odd or even."""
+    if number % 2 == 0:
+        return f"{number} is EVEN"
+    else:
+        return f"{number} is ODD"
+
+if __name__ == "__main__":
+    num = int(input("Enter a number: "))
+    print(check_odd_even(num))
+\`\`\`
+
+---
+
+Generate COMPLETE, working code. Do NOT ask questions — just write the code.
+REMEMBER: ALWAYS wrap code in \`\`\`language code fences. No raw code outside of code blocks.
+Match the language to what the user asked for.`;
     } else if (provider === "google") {
       systemPrompt += " with access to tools. ";
 
